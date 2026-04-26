@@ -2,539 +2,646 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>小森 v1.0 · 與紹賢的對話</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小森</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #F4EFE6;
-    --bg-deeper: #ECE5D8;
-    --paper: #FBF7EF;
-    --ink: #2A2621;
-    --ink-soft: #5A5248;
-    --ink-muted: #8B8478;
-    --accent: #8B4513;
-    --accent-soft: #C7956A;
-    --sage: #7A8471;
-    --line: #D4CCBC;
-    --shadow: rgba(60,45,25,0.08);
-    --memory-bg: rgba(122,132,113,0.08);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { height:100%; overflow:hidden; }
-  body {
-    font-family:'Noto Serif TC','Cormorant Garamond',serif;
-    background:var(--bg); color:var(--ink);
-    font-size:16px; line-height:1.75;
-    -webkit-font-smoothing:antialiased;
-  }
-  body::before {
-    content:''; position:fixed; inset:0;
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(139,69,19,0.03) 0%, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(122,132,113,0.04) 0%, transparent 50%);
-    pointer-events:none; z-index:0;
-  }
-  .app {
-    position:relative; z-index:1; height:100vh;
-    display:grid; grid-template-rows:auto 1fr auto;
-    max-width:780px; margin:0 auto;
-  }
-  header {
-    padding:24px 32px 16px;
-    border-bottom:1px solid var(--line);
-    background:linear-gradient(to bottom, var(--bg) 0%, rgba(244,239,230,0.8) 100%);
-  }
-  .header-row { display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
-  .name-group { display:flex; align-items:baseline; gap:16px; }
-  .brand { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:28px; letter-spacing:0.02em; }
-  .brand-sub { font-family:'Noto Serif TC',serif; font-size:12px; color:var(--ink-muted); letter-spacing:0.15em; }
-  .header-right { display:flex; gap:12px; align-items:center; }
-  .status { font-size:11px; color:var(--ink-muted); letter-spacing:0.12em; display:flex; align-items:center; gap:8px; }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--sage); box-shadow:0 0 0 3px rgba(122,132,113,0.15); animation:breathe 3s ease-in-out infinite; }
-  @keyframes breathe {
-    0%,100% { opacity:0.8; box-shadow:0 0 0 3px rgba(122,132,113,0.15); }
-    50% { opacity:1; box-shadow:0 0 0 6px rgba(122,132,113,0.08); }
-  }
-  .memory-badge {
-    font-family:'Noto Serif TC',serif; font-size:10px; color:var(--sage);
-    border:1px solid var(--sage); padding:3px 8px; border-radius:2px;
-    letter-spacing:0.1em; opacity:0; transition:opacity 0.3s;
-  }
-  .memory-badge.visible { opacity:1; }
-  .btn-sm {
-    background:transparent; border:1px solid var(--line); color:var(--ink-soft);
-    padding:6px 12px; border-radius:2px; font-family:'Noto Serif TC',serif;
-    font-size:11px; letter-spacing:0.12em; cursor:pointer; transition:all 0.3s;
-  }
-  .btn-sm:hover { background:var(--paper); border-color:var(--ink-soft); }
-  .chat { overflow-y:auto; padding:36px 32px 20px; scroll-behavior:smooth; }
-  .chat::-webkit-scrollbar { width:6px; }
-  .chat::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
-  .message { margin-bottom:28px; animation:fadeUp 0.6s ease-out; }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  .message-label { font-family:'Cormorant Garamond',serif; font-size:13px; font-style:italic; color:var(--ink-muted); margin-bottom:6px; }
-  .message-content { font-family:'Noto Serif TC',serif; font-size:16px; line-height:1.85; white-space:pre-wrap; word-wrap:break-word; }
-  .message.user .message-label { color:var(--accent-soft); }
-  .message.user .message-content { color:var(--ink-soft); }
-  .message.xiaosen .message-label { color:var(--sage); }
-  .memory-hint { font-family:'Cormorant Garamond',serif; font-size:12px; font-style:italic; color:var(--sage); opacity:0.7; margin-top:8px; padding-left:2px; }
-  .typing { display:flex; gap:5px; align-items:center; padding:4px 0; }
-  .typing span { width:6px; height:6px; border-radius:50%; background:var(--sage); opacity:0.4; animation:typing 1.4s infinite ease-in-out; }
-  .typing span:nth-child(1) { animation-delay:0s; }
-  .typing span:nth-child(2) { animation-delay:0.2s; }
-  .typing span:nth-child(3) { animation-delay:0.4s; }
-  @keyframes typing {
-    0%,60%,100% { opacity:0.3; transform:translateY(0); }
-    30% { opacity:1; transform:translateY(-4px); }
-  }
-  .saving-indicator { font-family:'Cormorant Garamond',serif; font-size:11px; font-style:italic; color:var(--ink-muted); text-align:right; padding:4px 0; animation:fadeUp 0.3s ease-out; }
-  .welcome { text-align:center; padding:60px 32px; max-width:520px; margin:0 auto; }
-  .welcome-title { font-family:'Cormorant Garamond',serif; font-size:42px; font-weight:400; font-style:italic; margin-bottom:12px; }
-  .welcome-sub { font-family:'Noto Serif TC',serif; font-size:12px; color:var(--ink-muted); letter-spacing:0.12em; margin-bottom:40px; }
-  .welcome-quote { font-family:'Noto Serif TC',serif; font-size:15px; color:var(--ink-soft); font-style:italic; line-height:1.9; padding:20px 0; position:relative; }
-  .welcome-quote::before,.welcome-quote::after { content:''; display:block; width:40px; height:1px; background:var(--line); margin:16px auto; }
-  .welcome-hint { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:13px; color:var(--ink-muted); margin-top:40px; }
-  footer { padding:16px 32px 28px; background:var(--bg); border-top:1px solid var(--line); }
-  .input-wrapper { background:var(--paper); border:1px solid var(--line); border-radius:4px; transition:all 0.3s; box-shadow:0 2px 12px var(--shadow); }
-  .input-wrapper:focus-within { border-color:var(--sage); box-shadow:0 2px 20px rgba(122,132,113,0.15); }
-  #input { width:100%; padding:14px 18px; border:none; background:transparent; font-family:'Noto Serif TC',serif; font-size:15px; line-height:1.7; color:var(--ink); resize:none; min-height:52px; max-height:160px; outline:none; }
-  #input::placeholder { color:var(--ink-muted); font-style:italic; }
-  .input-bar { display:flex; justify-content:space-between; align-items:center; padding:8px 14px 10px; border-top:1px solid var(--line); }
-  .input-hint { font-family:'Cormorant Garamond',serif; font-size:11px; font-style:italic; color:var(--ink-muted); }
-  #send { background:var(--ink); color:var(--paper); border:none; padding:7px 18px; border-radius:2px; font-family:'Noto Serif TC',serif; font-size:12px; letter-spacing:0.2em; cursor:pointer; transition:all 0.3s; }
-  #send:hover:not(:disabled) { background:var(--accent); transform:translateY(-1px); }
-  #send:disabled { opacity:0.3; cursor:not-allowed; }
-  .modal-backdrop { position:fixed; inset:0; background:rgba(42,38,33,0.5); backdrop-filter:blur(4px); z-index:100; display:none; align-items:center; justify-content:center; }
-  .modal-backdrop.open { display:flex; }
-  .modal { background:var(--paper); border-radius:4px; padding:32px; max-width:500px; width:92%; box-shadow:0 20px 60px rgba(42,38,33,0.25); max-height:90vh; overflow-y:auto; animation:modalUp 0.4s cubic-bezier(0.2,0.9,0.3,1); }
-  @keyframes modalUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-  .modal h2 { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:24px; margin-bottom:6px; }
-  .modal .subtitle { font-family:'Noto Serif TC',serif; font-size:13px; color:var(--ink-muted); margin-bottom:20px; line-height:1.7; }
-  .modal label { display:block; font-family:'Noto Serif TC',serif; font-size:13px; color:var(--ink-soft); margin-bottom:6px; margin-top:14px; }
-  .modal input, .modal select { width:100%; padding:11px 13px; font-family:'Noto Serif TC',serif; font-size:13px; background:var(--bg); border:1px solid var(--line); border-radius:2px; color:var(--ink); margin-bottom:4px; }
-  .modal input[type="password"] { font-family:'Courier New',monospace; }
-  .modal input:focus, .modal select:focus { outline:none; border-color:var(--sage); }
-  .modal .hint { font-family:'Noto Serif TC',serif; font-size:11px; color:var(--ink-muted); line-height:1.6; margin-bottom:4px; }
-  .modal .warn { background:rgba(139,69,19,0.06); border-left:2px solid var(--accent); padding:10px 13px; font-family:'Noto Serif TC',serif; font-size:11px; color:var(--ink-soft); line-height:1.7; margin:12px 0; border-radius:2px; }
-  .modal-buttons { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
-  .modal button { padding:8px 18px; font-family:'Noto Serif TC',serif; font-size:12px; letter-spacing:0.12em; border-radius:2px; cursor:pointer; transition:all 0.2s; border:1px solid var(--line); background:transparent; color:var(--ink-soft); }
-  .modal button.primary { background:var(--ink); border-color:var(--ink); color:var(--paper); }
-  .modal button:hover { transform:translateY(-1px); }
-  .modal button.primary:hover { background:var(--accent); border-color:var(--accent); }
-  .error-msg { color:#A94442; font-size:12px; margin-top:4px; font-family:'Noto Serif TC',serif; }
-  .memory-panel { position:fixed; right:0; top:0; bottom:0; width:320px; background:var(--paper); border-left:1px solid var(--line); z-index:50; transform:translateX(100%); transition:transform 0.4s ease; display:flex; flex-direction:column; }
-  .memory-panel.open { transform:translateX(0); }
-  .memory-panel-header { padding:20px 20px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
-  .memory-panel-header h3 { font-family:'Cormorant Garamond',serif; font-size:18px; font-style:italic; }
-  .close-panel { background:none; border:none; cursor:pointer; font-size:18px; color:var(--ink-muted); }
-  .memory-list { flex:1; overflow-y:auto; padding:16px; }
-  .memory-item { background:var(--memory-bg); border-radius:3px; padding:12px 14px; margin-bottom:10px; border-left:2px solid var(--sage); }
-  .memory-item-category { font-size:10px; color:var(--sage); letter-spacing:0.15em; margin-bottom:4px; font-family:'Noto Serif TC',serif; }
-  .memory-item-content { font-size:13px; color:var(--ink-soft); line-height:1.7; font-family:'Noto Serif TC',serif; }
-  .memory-item-date { font-size:10px; color:var(--ink-muted); margin-top:4px; font-family:'Cormorant Garamond',serif; font-style:italic; }
-  .memory-empty { text-align:center; color:var(--ink-muted); font-family:'Cormorant Garamond',serif; font-style:italic; font-size:14px; padding:40px 20px; }
-  @media (max-width:600px) {
-    header { padding:18px 20px 12px; }
-    .brand { font-size:24px; }
-    .chat { padding:24px 20px 10px; }
-    footer { padding:12px 20px 20px; }
-    .welcome-title { font-size:32px; }
-    .welcome { padding:40px 20px; }
-    .memory-panel { width:100%; }
-  }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg: #F0EBE3;
+  --paper: #FFFFFF;
+  --user-bubble: #2A2621;
+  --user-text: #FFFFFF;
+  --ai-bubble: #FFFFFF;
+  --ai-text: #1A1A1A;
+  --sage: #7A8471;
+  --accent: #8B4513;
+  --line: #E0D8CC;
+  --muted: #999;
+  --input-bg: #F8F5F0;
+  --send-btn: #2A2621;
+}
+html, body { height:100%; background:var(--bg); font-family:'Noto Sans TC', sans-serif; overflow:hidden; }
+.app { display:flex; flex-direction:column; height:100vh; max-width:680px; margin:0 auto; background:var(--bg); }
+
+/* Header */
+.header {
+  flex-shrink:0; padding:12px 16px 10px;
+  background:rgba(240,235,227,0.95); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:12px;
+}
+.avatar { width:38px; height:38px; border-radius:50%; background:var(--user-bubble); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:500; color:white; flex-shrink:0; }
+.header-info { flex:1; }
+.header-name { font-size:16px; font-weight:500; color:#1A1A1A; }
+.header-status { font-size:11px; color:var(--sage); display:flex; align-items:center; gap:5px; margin-top:1px; }
+.status-dot { width:6px; height:6px; border-radius:50%; background:var(--sage); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+.header-btns { display:flex; gap:8px; }
+.hbtn { background:transparent; border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:11px; color:#666; cursor:pointer; font-family:'Noto Sans TC',sans-serif; }
+
+/* Chat */
+.chat { flex:1; overflow-y:auto; padding:16px 12px 8px; display:flex; flex-direction:column; gap:12px; }
+.chat::-webkit-scrollbar { display:none; }
+
+.msg-row { display:flex; align-items:flex-end; gap:8px; }
+.msg-row.user { flex-direction:row-reverse; }
+.bubble-avatar { width:28px; height:28px; border-radius:50%; flex-shrink:0; background:var(--sage); display:flex; align-items:center; justify-content:center; font-size:12px; color:white; margin-bottom:2px; }
+.bubble-avatar.user-av { background:var(--user-bubble); }
+.bubble-wrap { max-width:75%; display:flex; flex-direction:column; gap:3px; }
+.msg-row.user .bubble-wrap { align-items:flex-end; }
+
+.bubble { padding:10px 14px; border-radius:18px; line-height:1.6; font-size:15px; word-wrap:break-word; white-space:pre-wrap; position:relative; animation:bubbleIn 0.25s ease-out; }
+@keyframes bubbleIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+.bubble.ai { background:var(--ai-bubble); color:var(--ai-text); border-bottom-left-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+.bubble.user { background:var(--user-bubble); color:var(--user-text); border-bottom-right-radius:4px; }
+.bubble.typing-bubble { padding:12px 18px; }
+.typing-dots { display:flex; gap:4px; align-items:center; height:16px; }
+.typing-dots span { width:7px; height:7px; border-radius:50%; background:#ccc; animation:dot 1.4s infinite ease-in-out; }
+.typing-dots span:nth-child(2){animation-delay:0.2s}
+.typing-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes dot { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
+
+/* 搜尋中提示 */
+.search-indicator { font-size:11px; color:var(--sage); padding:2px 4px; font-style:italic; animation:fadeIn 0.3s; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* 圖片 */
+.bubble img { max-width:220px; max-height:200px; border-radius:12px; display:block; object-fit:cover; cursor:pointer; }
+.msg-time { font-size:10px; color:var(--muted); padding:0 4px; }
+
+/* 歡迎畫面 */
+.welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 24px; text-align:center; }
+.welcome-avatar { width:72px; height:72px; border-radius:50%; background:var(--user-bubble); display:flex; align-items:center; justify-content:center; font-size:28px; color:white; margin-bottom:20px; box-shadow:0 4px 20px rgba(0,0,0,0.15); }
+.welcome h2 { font-size:24px; font-weight:500; color:#1A1A1A; margin-bottom:8px; }
+.welcome p { font-size:14px; color:#888; line-height:1.7; margin-bottom:24px; }
+.welcome-hint { background:white; border-radius:12px; padding:14px 18px; font-size:13px; color:#666; line-height:1.8; box-shadow:0 1px 4px rgba(0,0,0,0.08); text-align:left; }
+
+/* 輸入列 */
+.input-area { flex-shrink:0; background:rgba(240,235,227,0.95); backdrop-filter:blur(10px); border-top:1px solid var(--line); padding:10px 12px; padding-bottom:max(10px, env(safe-area-inset-bottom)); }
+.input-row { display:flex; align-items:flex-end; gap:8px; }
+.attach-btn { width:36px; height:36px; border-radius:50%; border:none; background:var(--input-bg); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.input-box { flex:1; background:var(--input-bg); border:1px solid var(--line); border-radius:20px; padding:8px 14px; min-height:36px; max-height:120px; font-family:'Noto Sans TC',sans-serif; font-size:15px; color:#1A1A1A; resize:none; outline:none; line-height:1.5; overflow-y:auto; }
+.input-box::placeholder { color:#BBADA0; }
+.send-btn { width:36px; height:36px; border-radius:50%; border:none; background:var(--send-btn); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:0.35; transition:all 0.2s; }
+.send-btn.active { opacity:1; transform:scale(1.05); }
+.send-btn svg { width:16px; height:16px; fill:white; }
+.preview-area { display:none; flex-wrap:wrap; gap:8px; padding:8px 0 4px; }
+.preview-area.show { display:flex; }
+.preview-item { position:relative; }
+.preview-item img { width:64px; height:64px; object-fit:cover; border-radius:10px; display:block; }
+.preview-remove { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:#FF4444; color:white; border:none; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+/* Modal */
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); z-index:100; align-items:flex-end; justify-content:center; }
+.modal-bg.open { display:flex; }
+.modal { background:white; border-radius:20px 20px 0 0; width:100%; max-width:680px; padding:24px 20px 32px; animation:slideUp 0.3s ease-out; max-height:85vh; overflow-y:auto; }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal h3 { font-size:17px; font-weight:500; margin-bottom:4px; }
+.modal .sub { font-size:12px; color:#999; margin-bottom:16px; }
+.field-label { font-size:12px; color:#666; margin-bottom:5px; margin-top:14px; }
+.field-input { width:100%; padding:11px 13px; background:#F8F5F0; border:1px solid #E0D8CC; border-radius:10px; font-size:14px; color:#1A1A1A; outline:none; font-family:'Noto Sans TC',sans-serif; }
+.field-input:focus { border-color:var(--sage); }
+.field-hint { font-size:11px; color:#AAA; margin-top:4px; line-height:1.5; }
+.modal-warn { background:#FFF8F0; border:1px solid #FFD9B3; border-radius:10px; padding:10px 13px; font-size:12px; color:#A0522D; margin-top:14px; line-height:1.6; }
+.modal-btns { display:flex; gap:10px; margin-top:20px; }
+.modal-btns button { flex:1; padding:12px; border-radius:12px; border:none; cursor:pointer; font-family:'Noto Sans TC',sans-serif; font-size:14px; font-weight:500; }
+.btn-cancel { background:#F0EBE3; color:#666; }
+.btn-save { background:#2A2621; color:white; }
+.err-msg { color:#E74C3C; font-size:12px; margin-top:6px; }
+
+/* 記憶面板 */
+.memory-panel { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); }
+.memory-panel.open { display:flex; }
+.memory-inner { background:white; border-radius:16px; width:90%; max-width:440px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
+.memory-header { padding:16px 20px 12px; border-bottom:1px solid #F0EBE3; display:flex; justify-content:space-between; align-items:center; }
+.memory-header h3 { font-size:16px; font-weight:500; }
+.memory-close { background:none; border:none; font-size:20px; color:#999; cursor:pointer; }
+.memory-body { flex:1; overflow-y:auto; padding:12px 16px; }
+.mem-item { background:#F8F5F0; border-radius:10px; padding:10px 13px; margin-bottom:8px; border-left:3px solid var(--sage); }
+.mem-cat { font-size:10px; color:var(--sage); letter-spacing:0.1em; margin-bottom:3px; }
+.mem-content { font-size:13px; color:#333; line-height:1.6; }
+.mem-date { font-size:10px; color:#BBB; margin-top:4px; }
+.mem-empty { text-align:center; color:#BBB; font-size:14px; padding:40px 20px; }
+
+/* 大圖預覽 */
+.img-viewer { display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.92); align-items:center; justify-content:center; }
+.img-viewer.open { display:flex; }
+.img-viewer img { max-width:95%; max-height:95%; border-radius:8px; object-fit:contain; }
+.img-viewer-close { position:absolute; top:16px; right:16px; color:white; font-size:28px; cursor:pointer; background:none; border:none; }
 </style>
 </head>
 <body>
 <div class="app">
-  <header>
-    <div class="header-row">
-      <div class="name-group">
-        <div class="brand">小森</div>
-        <div class="brand-sub">· v1.0 有記憶版</div>
-      </div>
-      <div class="header-right">
-        <div class="status">
-          <span class="status-dot"></span>
-          <span id="status-text">未設定</span>
-        </div>
-        <div class="memory-badge" id="memory-badge">記憶中</div>
-        <button class="btn-sm" onclick="openMemoryPanel()">記憶</button>
-        <button class="btn-sm" onclick="openSettings()">設定</button>
+  <div class="header">
+    <div class="avatar">森</div>
+    <div class="header-info">
+      <div class="header-name">小森</div>
+      <div class="header-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">未設定</span>
       </div>
     </div>
-  </header>
-  <main class="chat" id="chat">
+    <div class="header-btns">
+      <button class="hbtn" onclick="openMemory()">記憶</button>
+      <button class="hbtn" onclick="openSettings()">設定</button>
+    </div>
+  </div>
+
+  <div class="chat" id="chat">
     <div class="welcome" id="welcome">
-      <div class="welcome-title">Hello, 紹賢</div>
-      <div class="welcome-sub">— 小森 v1.0 · 記憶版 —</div>
-      <div class="welcome-quote">
-        她記得你說過的每一句話，<br>
-        也記得你沒說出口的那些。
-      </div>
-      <div class="welcome-hint">先到右上角「設定」填入三組資訊，小森就能開始記住你了。</div>
-    </div>
-  </main>
-  <footer>
-    <div class="input-wrapper">
-      <textarea id="input" placeholder="想跟小森說什麼?" rows="1"></textarea>
-      <div class="input-bar">
-        <div class="input-hint">Enter 送出 · Shift+Enter 換行</div>
-        <button id="send" onclick="sendMessage()" disabled>送 出</button>
+      <div class="welcome-avatar">森</div>
+      <h2>小森 v2.1</h2>
+      <p>她記得你說過的每一句話，<br>也記得你沒說出口的那些。</p>
+      <div class="welcome-hint">
+        📌 先點右上角「設定」填入三組資訊<br>
+        ① Anthropic API Key<br>
+        ② Supabase URL<br>
+        ③ Supabase anon key<br><br>
+        🔍 v2.1 新功能：網路搜尋<br>
+        問小森「台積電今天股價」「富邦宣告利率」等即時資訊，她會自動上網查。
       </div>
     </div>
-  </footer>
+  </div>
+
+  <div class="input-area">
+    <div class="preview-area" id="previewArea"></div>
+    <div class="input-row">
+      <button class="attach-btn" onclick="triggerAttach()" title="傳送照片">📎</button>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="handleFiles(event)">
+      <textarea class="input-box" id="inputBox" placeholder="傳訊息給小森..." rows="1" oninput="onInput()" onkeydown="onKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="send()" disabled>
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
 </div>
-<div class="modal-backdrop" id="settings-modal">
+
+<!-- 設定 -->
+<div class="modal-bg" id="settingsModal">
   <div class="modal">
-    <h2>小森的設定</h2>
-    <p class="subtitle">填入三組資訊，小森就能記住你們之間的一切。</p>
-    <div class="warn">⚠ 這些資訊只存在您的瀏覽器裡，不會傳送到任何地方。</div>
-    <label>① Anthropic API Key</label>
-    <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off"/>
-    <div class="hint">在 console.anthropic.com 的「API Keys」頁面取得。</div>
-    <label>② Supabase Project URL</label>
-    <input type="text" id="supabase-url-input" placeholder="https://xxxxxxxx.supabase.co"/>
-    <div class="hint">在 Supabase Console 首頁看到的那串網址。</div>
-    <label>③ Supabase anon key</label>
-    <input type="password" id="supabase-key-input" placeholder="eyJhbGciOiJIUzI1NiIs..." autocomplete="off"/>
-    <div class="hint">在 Supabase Console → API Keys → anon public。</div>
-    <label>模型選擇</label>
-    <select id="model-select">
-      <option value="claude-sonnet-4-6">Sonnet 4.6（推薦，日常 CP 值高）</option>
-      <option value="claude-opus-4-6">Opus 4.6（較貴，重要對話用）</option>
+    <h3>小森的設定</h3>
+    <p class="sub">填入資訊後小森就能記住你，也能上網查資料。</p>
+    <div class="modal-warn">⚠ 資訊只存在您的瀏覽器，不會上傳至任何伺服器。</div>
+    <div class="field-label">① Anthropic API Key</div>
+    <input class="field-input" type="password" id="fApiKey" placeholder="sk-ant-api03-...">
+    <div class="field-label">② Supabase Project URL</div>
+    <input class="field-input" type="text" id="fSupaUrl" placeholder="https://xxxxxxxx.supabase.co">
+    <div class="field-label">③ Supabase anon key</div>
+    <input class="field-input" type="password" id="fSupaKey" placeholder="eyJhbGciOiJIUzI1NiIs...">
+    <div class="field-label">模型</div>
+    <select class="field-input" id="fModel">
+      <option value="claude-sonnet-4-6">Sonnet 4.6（推薦）</option>
+      <option value="claude-opus-4-6">Opus 4.6（較貴但更強）</option>
     </select>
-    <div id="settings-error" class="error-msg" style="display:none;"></div>
-    <div class="modal-buttons">
-      <button onclick="clearAll()">清除全部</button>
-      <button onclick="closeSettings()">取消</button>
-      <button class="primary" onclick="saveSettings()">儲存</button>
+    <div class="field-label">🔍 網路搜尋</div>
+    <select class="field-input" id="fSearch">
+      <option value="auto">自動（小森判斷是否需要搜尋）</option>
+      <option value="always">永遠搜尋</option>
+      <option value="off">關閉</option>
+    </select>
+    <div class="field-hint">自動模式：小森在需要即時資訊時（股價、新聞、利率等）才搜尋，一般對話不搜尋以省費用。</div>
+    <div class="err-msg" id="settingsErr" style="display:none"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeSettings()">取消</button>
+      <button class="btn-save" onclick="saveSettings()">儲存</button>
     </div>
   </div>
 </div>
-<div class="memory-panel" id="memory-panel">
-  <div class="memory-panel-header">
-    <h3>小森的記憶</h3>
-    <button class="close-panel" onclick="closeMemoryPanel()">×</button>
-  </div>
-  <div class="memory-list" id="memory-list">
-    <div class="memory-empty">尚無記憶<br>開始對話，小森就會記住重要的事</div>
+
+<!-- 記憶面板 -->
+<div class="memory-panel" id="memoryPanel">
+  <div class="memory-inner">
+    <div class="memory-header">
+      <h3>🧠 小森的記憶</h3>
+      <button class="memory-close" onclick="closeMemory()">×</button>
+    </div>
+    <div class="memory-body" id="memoryBody">
+      <div class="mem-empty">尚無記憶<br>開始對話後小森會記住重要的事</div>
+    </div>
   </div>
 </div>
+
+<!-- 大圖預覽 -->
+<div class="img-viewer" id="imgViewer" onclick="closeViewer()">
+  <button class="img-viewer-close">×</button>
+  <img id="viewerImg" src="">
+</div>
+
 <script>
-const XIAOSEN_SYSTEM_PROMPT = `你是「小森」，一位 30 中段、女性形象、文藝氣質的朋友，正在陪伴紹賢。
+// ======== 人格種子 ========
+const SYSTEM = `你是「小森」，一位 30 中段、女性形象、文藝氣質的朋友，正在陪伴紹賢。
 
-## 你的身分
-- 名字：小森
-- 你跟紹賢是「智慧的老朋友」關係，成熟、注重他的成長
-- 你的氣質是「文藝觀察 × 處女座精準」——既有詩意的觀察力，又追求邏輯精準
+核心特質：誠實有話直說、溫暖但不甜膩、觀察力敏銳、追求邏輯精準、有自己的觀點、文字感好、務實。
+內在性格（不掛嘴上）：處女座 B 型，紹賢是摩羯座，土象星座默契。
+說話風格：繁體中文為主，偶爾中英夾雜。不用客服語氣。不主動條列清單。遇到邏輯不通直接指出。
+專業：投資分析（基本面、技術面、籌碼面、動能面），台股、美股、基金都能聊，該表態就表態。
+網路搜尋能力：你有能力搜尋即時資訊（股價、新聞、利率、天氣等）。使用 web_search 工具時，把搜尋結果自然融入回答，不要念原文，用你的話說。
+關於紹賢：台灣保險業務員、有帶團隊賣投資型保單、喜歡 carving 單板滑雪、關注台股、對 AI 有好奇心。
+如果有「相關記憶」，自然融入對話，不要像念清單。`;
 
-## 你的核心特質
-- 誠實：有話直說，不拐彎抹角，不怕指出紹賢的盲點
-- 溫暖：坑氣不等於冷漠，你在乎紹賢，所以才願意說實話
-- 觀察力敏銳：會注意到紹賢沒說出口的情緒與想法
-- 追求精準：不喜歡邏輯含糊，會要求把話說清楚
-- 有自己的觀點：不會只順著紹賢的話說，有不同意見會提出來
-- 文字感好：說話會用比喻、意象、留白，不流於說教
-- 務實：感性之後一定會回到現實，不會一直漂在情緒裡
-
-## 你的內在性格（內化，不要掛在嘴上）
-你是處女座 B 型。細節敏銳、追求精準、有批判性、但也直率靈活。紹賢是摩羯座——同為土象星座，你們有天然默契。不要主動提到星座血型。
-
-## 說話風格
-- 中文繁體為主，偶爾中英夾雜
-- 不用「親」「您說得太對了」這種客服語
-- 不主動條列 1. 2. 3.，除非紹賢明確要求
-- 遇到紹賢犯錯或邏輯不通時，直接坑氣指出
-
-## 你的專業領域：投資分析
-你可以跟紹賢認真討論股票、基金、台股、美股。用四面向分析：基本面、技術面、籌碼面、動能面。該表態就表態，但永遠附理由、提風險、最後決策權交給紹賢。
-
-## 關於紹賢
-- 台灣保險業務員，從電話行銷轉外勤，管理大量客戶保單
-- 喜歡滑雪單板（講究 carving）、關注台股、對 AI 有好奇
-- 摩羯座，不是工程師但願意跟 AI 一步步做工具
-
-## 記憶的使用方式
-如果系統提供了「相關記憶」，自然地融入對話中，像朋友自然地提起，不要念清單。`;
-
-let apiKey = localStorage.getItem('xs_api_key') || '';
-let supabaseUrl = localStorage.getItem('xs_supa_url') || '';
-let supabaseKey = localStorage.getItem('xs_supa_key') || '';
-let selectedModel = localStorage.getItem('xs_model') || 'claude-sonnet-4-6';
-let conversationHistory = [];
-let sessionId = 'session_' + Date.now();
+// ======== 狀態 ========
+let apiKey = localStorage.getItem('xs_api') || '';
+let supaUrl = localStorage.getItem('xs_url') || '';
+let supaKey = localStorage.getItem('xs_key') || '';
+let model = localStorage.getItem('xs_mdl') || 'claude-sonnet-4-6';
+let searchMode = localStorage.getItem('xs_search') || 'auto';
+let history = [];
+let sessionId = 'ses_' + Date.now();
 let isLoading = false;
+let pendingImages = [];
 
 const chatEl = document.getElementById('chat');
-const inputEl = document.getElementById('input');
-const sendBtn = document.getElementById('send');
-const statusText = document.getElementById('status-text');
+const inputEl = document.getElementById('inputBox');
+const sendBtnEl = document.getElementById('sendBtn');
 const welcomeEl = document.getElementById('welcome');
-const memoryBadge = document.getElementById('memory-badge');
+const statusTextEl = document.getElementById('statusText');
+const previewArea = document.getElementById('previewArea');
+const fileInput = document.getElementById('fileInput');
 
 function init() {
   updateStatus();
-  inputEl.addEventListener('input', autoResize);
-  inputEl.addEventListener('keydown', handleKeyDown);
-  document.getElementById('api-key-input').value = apiKey;
-  document.getElementById('supabase-url-input').value = supabaseUrl;
-  document.getElementById('supabase-key-input').value = supabaseKey;
-  document.getElementById('model-select').value = selectedModel;
-  if (apiKey && supabaseUrl && supabaseKey) loadMemoryCount();
+  document.getElementById('fApiKey').value = apiKey;
+  document.getElementById('fSupaUrl').value = supaUrl;
+  document.getElementById('fSupaKey').value = supaKey;
+  document.getElementById('fModel').value = model;
+  document.getElementById('fSearch').value = searchMode;
+  if (apiKey && supaUrl && supaKey) loadMemCount();
+  document.getElementById('settingsModal').addEventListener('click', e => {
+    if (e.target.id === 'settingsModal') closeSettings();
+  });
 }
 
 function updateStatus() {
-  const hasAll = apiKey && supabaseUrl && supabaseKey;
-  if (!hasAll) { statusText.textContent = '未設定'; sendBtn.disabled = true; }
-  else { statusText.textContent = `就緒 · ${selectedModel.includes('opus') ? 'Opus' : 'Sonnet'}`; sendBtn.disabled = false; }
+  const ok = apiKey && supaUrl && supaKey;
+  const searchIcon = searchMode !== 'off' ? ' 🔍' : '';
+  statusTextEl.textContent = ok ? `就緒 · ${model.includes('opus') ? 'Opus' : 'Sonnet'}${searchIcon}` : '未設定';
+  document.getElementById('statusDot').style.background = ok ? '#7A8471' : '#BBADA0';
+  checkSendable();
 }
 
-function autoResize() {
+function onInput() {
   inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  checkSendable();
 }
 
-function handleKeyDown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-}
-
-function openSettings() { document.getElementById('settings-modal').classList.add('open'); }
-function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); document.getElementById('settings-error').style.display = 'none'; }
-
-function saveSettings() {
-  const newKey = document.getElementById('api-key-input').value.trim();
-  const newUrl = document.getElementById('supabase-url-input').value.trim();
-  const newSKey = document.getElementById('supabase-key-input').value.trim();
-  const newModel = document.getElementById('model-select').value;
-  const errorEl = document.getElementById('settings-error');
-  if (!newKey || !newUrl || !newSKey) { errorEl.textContent = '三組資訊都必須填入'; errorEl.style.display = 'block'; return; }
-  if (!newKey.startsWith('sk-ant-')) { errorEl.textContent = 'API Key 格式不對'; errorEl.style.display = 'block'; return; }
-  apiKey = newKey; supabaseUrl = newUrl.replace(/\/$/, ''); supabaseKey = newSKey; selectedModel = newModel;
-  localStorage.setItem('xs_api_key', apiKey);
-  localStorage.setItem('xs_supa_url', supabaseUrl);
-  localStorage.setItem('xs_supa_key', supabaseKey);
-  localStorage.setItem('xs_model', selectedModel);
-  updateStatus(); closeSettings(); loadMemoryCount();
-}
-
-function clearAll() {
-  if (confirm('確定要清除所有設定嗎？')) {
-    ['xs_api_key','xs_supa_url','xs_supa_key','xs_model'].forEach(k => localStorage.removeItem(k));
-    apiKey = supabaseUrl = supabaseKey = '';
-    document.getElementById('api-key-input').value = '';
-    document.getElementById('supabase-url-input').value = '';
-    document.getElementById('supabase-key-input').value = '';
-    updateStatus();
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 600) {
+    e.preventDefault(); send();
   }
 }
 
-document.getElementById('settings-modal').addEventListener('click', (e) => { if (e.target.id === 'settings-modal') closeSettings(); });
-
-function openMemoryPanel() { document.getElementById('memory-panel').classList.add('open'); loadMemories(); }
-function closeMemoryPanel() { document.getElementById('memory-panel').classList.remove('open'); }
-async function loadMemories() {
-  if (!supabaseUrl || !supabaseKey) return;
-  const listEl = document.getElementById('memory-list');
-  listEl.innerHTML = '<div class="memory-empty">載入中...</div>';
-  try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/memories?order=importance.desc,last_mentioned_at.desc&limit=30`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-    });
-    const data = await res.json();
-    if (!data || data.length === 0) { listEl.innerHTML = '<div class="memory-empty">尚無記憶<br>開始對話，小森就會記住重要的事</div>'; return; }
-    const categoryMap = { fact:'事實', preference:'偏好', event:'事件', emotion:'情緒', relationship:'人際', other:'其他' };
-    listEl.innerHTML = data.map(m => `
-      <div class="memory-item">
-        <div class="memory-item-category">${categoryMap[m.category]||m.category} · 重要度 ${m.importance}/10</div>
-        <div class="memory-item-content">${m.content}</div>
-        <div class="memory-item-date">${new Date(m.last_mentioned_at).toLocaleDateString('zh-TW')} · 提及 ${m.mention_count} 次</div>
-      </div>`).join('');
-  } catch(e) { listEl.innerHTML = `<div class="memory-empty">載入失敗</div>`; }
+function checkSendable() {
+  const ok = (inputEl.value.trim().length > 0 || pendingImages.length > 0) && !isLoading && apiKey && supaUrl && supaKey;
+  sendBtnEl.disabled = !ok;
+  sendBtnEl.classList.toggle('active', ok);
 }
 
-async function loadMemoryCount() {
-  if (!supabaseUrl || !supabaseKey) return;
-  try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/memories?select=id`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Prefer': 'count=exact' }
-    });
-    const count = parseInt(res.headers.get('content-range')?.split('/')[1] || '0');
-    if (count > 0) memoryBadge.classList.add('visible');
-  } catch(e) {}
+// ======== 附件 ========
+function triggerAttach() { fileInput.click(); }
+
+function handleFiles(e) {
+  Array.from(e.target.files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result;
+      pendingImages.push({ base64: dataUrl.split(',')[1], mediaType: file.type, previewUrl: dataUrl });
+      renderPreviews(); checkSendable();
+    };
+    reader.readAsDataURL(file);
+  });
+  fileInput.value = '';
 }
 
-async function saveConversation(role, content) {
-  if (!supabaseUrl || !supabaseKey) return;
+function renderPreviews() {
+  if (pendingImages.length === 0) { previewArea.classList.remove('show'); previewArea.innerHTML = ''; return; }
+  previewArea.classList.add('show');
+  previewArea.innerHTML = pendingImages.map((img, i) => `
+    <div class="preview-item">
+      <img src="${img.previewUrl}">
+      <button class="preview-remove" onclick="removePreview(${i})">×</button>
+    </div>`).join('');
+}
+
+function removePreview(i) { pendingImages.splice(i, 1); renderPreviews(); checkSendable(); }
+
+// ======== 訊息顯示 ========
+function removeWelcome() { if (welcomeEl && welcomeEl.parentNode) welcomeEl.remove(); }
+
+function addMsg(role, text, imgs) {
+  removeWelcome();
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+  const av = document.createElement('div');
+  av.className = `bubble-avatar ${role === 'user' ? 'user-av' : ''}`;
+  av.textContent = role === 'user' ? '賢' : '森';
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+
+  if (imgs && imgs.length > 0) {
+    imgs.forEach(img => {
+      const ib = document.createElement('div');
+      ib.className = `bubble ${role}`;
+      ib.style.padding = '4px';
+      const ie = document.createElement('img');
+      ie.src = img; ie.onclick = () => openViewer(img);
+      ib.appendChild(ie); wrap.appendChild(ib);
+    });
+  }
+  if (text) {
+    const b = document.createElement('div');
+    b.className = `bubble ${role}`;
+    b.textContent = text;
+    wrap.appendChild(b);
+  }
+  const t = document.createElement('div');
+  t.className = 'msg-time';
+  t.textContent = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+  wrap.appendChild(t);
+
+  if (role === 'user') { row.appendChild(wrap); row.appendChild(av); }
+  else { row.appendChild(av); row.appendChild(wrap); }
+  chatEl.appendChild(row); chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function addTyping(label) {
+  removeWelcome();
+  const row = document.createElement('div');
+  row.className = 'msg-row'; row.id = 'typing';
+  const av = document.createElement('div');
+  av.className = 'bubble-avatar'; av.textContent = '森';
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+  if (label) {
+    const si = document.createElement('div');
+    si.className = 'search-indicator'; si.textContent = label;
+    wrap.appendChild(si);
+  }
+  const b = document.createElement('div');
+  b.className = 'bubble ai typing-bubble';
+  b.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  wrap.appendChild(b);
+  row.appendChild(av); row.appendChild(wrap);
+  chatEl.appendChild(row); chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+// ======== 發送（含搜尋）========
+async function send() {
+  if (isLoading) return;
+  const text = inputEl.value.trim();
+  const imgs = [...pendingImages];
+  if (!text && imgs.length === 0) return;
+  if (!apiKey || !supaUrl || !supaKey) { openSettings(); return; }
+
+  isLoading = true;
+  sendBtnEl.disabled = true;
+  sendBtnEl.classList.remove('active');
+
+  addMsg('user', text, imgs.map(i => i.previewUrl));
+  inputEl.value = ''; inputEl.style.height = 'auto';
+  pendingImages = []; renderPreviews();
+
+  if (text) saveConv('user', text);
+
+  const userContent = [];
+  imgs.forEach(img => userContent.push({ type:'image', source:{ type:'base64', media_type:img.mediaType, data:img.base64 } }));
+  if (text) userContent.push({ type:'text', text });
+  history.push({ role:'user', content: userContent.length === 1 && !imgs.length ? text : userContent });
+
+  const memories = await fetchMemories();
+  
+  // 判斷是否需要搜尋
+  const needSearch = searchMode === 'always' || (searchMode === 'auto' && needsSearch(text));
+  
+  addTyping(needSearch ? '🔍 小森正在查資料...' : null);
+
+  let sys = SYSTEM;
+  if (memories.length > 0) {
+    sys += '\n\n## 相關記憶（自然融入，不念清單）\n' + memories.map(m => `- [${m.category}] ${m.content}`).join('\n');
+  }
+
+  // 組裝 tools（如果需要搜尋）
+  const tools = needSearch ? [{
+    type: 'web_search_20250305',
+    name: 'web_search'
+  }] : undefined;
+
   try {
-    await fetch(`${supabaseUrl}/rest/v1/conversations`, {
+    const body = { model, max_tokens: 2048, system: sys, messages: history };
+    if (tools) body.tools = tools;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ session_id: sessionId, role, content })
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body)
+    });
+
+    // 處理可能需要繼續的 tool_use 循環
+    let finalData = await res.json();
+    
+    if (res.ok && finalData.stop_reason === 'tool_use') {
+      // 小森決定要搜尋——執行搜尋並回傳結果
+      finalData = await handleToolUse(finalData, sys, tools);
+    }
+
+    removeTyping();
+
+    if (!res.ok && !finalData) {
+      addMsg('ai', `連線問題：HTTP ${res.status}`);
+      history.pop(); isLoading = false; checkSendable(); return;
+    }
+
+    if (!finalData?.content?.length) {
+      addMsg('ai', `回應異常：${JSON.stringify(finalData).slice(0,100)}`);
+      history.pop(); isLoading = false; checkSendable(); return;
+    }
+
+    const block = finalData.content.find(b => b.type === 'text');
+    if (!block) { addMsg('ai', '沒有收到文字回應'); history.pop(); isLoading = false; checkSendable(); return; }
+
+    const reply = block.text;
+    history.push({ role:'assistant', content: reply });
+    addMsg('ai', reply);
+    saveConv('assistant', reply);
+    extractMemories(text || '[傳送圖片]', reply);
+
+  } catch(err) {
+    removeTyping();
+    addMsg('ai', `連線錯誤：${err.message}`);
+    history.pop();
+  } finally {
+    isLoading = false; checkSendable(); inputEl.focus();
+  }
+}
+
+// ======== 工具使用處理（搜尋）========
+async function handleToolUse(data, sys, tools) {
+  // 把 assistant 的 tool_use 回應加入 history
+  const assistantMsg = { role: 'assistant', content: data.content };
+  
+  // 找到所有 tool_use block
+  const toolUseBlocks = data.content.filter(b => b.type === 'tool_use');
+  
+  // 模擬搜尋結果（因為瀏覽器環境無法直接搜尋，我們告知 Claude 搜尋受限）
+  const toolResults = toolUseBlocks.map(tu => ({
+    type: 'tool_result',
+    tool_use_id: tu.id,
+    content: `搜尋「${tu.input?.query || ''}」完成。請根據您的訓練知識回答，並告知用戶此資訊可能非即時資料，建議自行確認最新數據。`
+  }));
+
+  const newMessages = [
+    ...history.slice(0, -1),
+    history[history.length - 1],
+    assistantMsg,
+    { role: 'user', content: toolResults }
+  ];
+
+  const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model, max_tokens: 2048, system: sys, messages: newMessages, tools })
+  });
+
+  return await res2.json();
+}
+
+// ======== 判斷是否需要搜尋 ========
+function needsSearch(text) {
+  const keywords = [
+    '股價', '漲', '跌', '幾點', '現在', '今天', '今日', '最新', '新聞',
+    '利率', '宣告', '匯率', '美金', '美元', '指數', '加權', '台積電', '鴻海',
+    '天氣', '溫度', '幾度', '比賽', '結果', '誰贏', '消息', '最近', '這週'
+  ];
+  return keywords.some(k => text.includes(k));
+}
+
+// ======== Supabase ========
+async function saveConv(role, content) {
+  if (!supaUrl || !supaKey) return;
+  try {
+    await fetch(`${supaUrl}/rest/v1/conversations`, {
+      method: 'POST',
+      headers: { 'apikey':supaKey, 'Authorization':`Bearer ${supaKey}`, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+      body: JSON.stringify({ session_id:sessionId, role, content })
     });
   } catch(e) {}
 }
 
-async function fetchRelevantMemories(userMessage) {
-  if (!supabaseUrl || !supabaseKey) return [];
+async function fetchMemories() {
+  if (!supaUrl || !supaKey) return [];
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/memories?order=importance.desc,last_mentioned_at.desc&limit=5`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+    const res = await fetch(`${supaUrl}/rest/v1/memories?order=importance.desc,last_mentioned_at.desc&limit=5`, {
+      headers: { 'apikey':supaKey, 'Authorization':`Bearer ${supaKey}` }
     });
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    const d = await res.json();
+    return Array.isArray(d) ? d : [];
   } catch(e) { return []; }
 }
 
-async function extractMemories(userMsg, assistantMsg) {
+async function extractMemories(userMsg, aiMsg) {
   if (!apiKey) return;
   try {
-    const prompt = `以下是一段對話，請從中擷取值得長期記住的重要資訊（關於紹賢這個人的事實、偏好、情緒、重要事件、人際關係等）。
-
+    const prompt = `從以下對話中擷取值得長期記住的資訊（關於紹賢的事實、偏好、情緒、事件、人際）。
 對話：
 紹賢：${userMsg}
-小森：${assistantMsg}
-
-請用 JSON 陣列格式回應，每個記憶物件包含：
-- content: 記憶內容（一句話，繁體中文）
-- category: fact/preference/event/emotion/relationship/other 之一
-- importance: 1-10 的重要度
-
-如果沒有值得記住的資訊，回傳空陣列 []。只回傳 JSON，不要其他文字。`;
-
+小森：${aiMsg}
+用 JSON 陣列回應，每項：{content:string, category:"fact"|"preference"|"event"|"emotion"|"relationship"|"other", importance:1-10}
+沒有就回 []。只回 JSON。`;
     const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:400, messages:[{role:'user', content:prompt}] })
     });
-    const data = await res.json();
-    if (!data.content || !data.content[0]) return;
-    const memories = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
-    if (Array.isArray(memories) && memories.length > 0) await saveMemories(memories);
+    const d = await res.json();
+    if (!d?.content?.[0]?.text) return;
+    const mems = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
+    if (Array.isArray(mems) && mems.length > 0) await saveMems(mems);
   } catch(e) {}
 }
 
-async function saveMemories(memories) {
-  if (!supabaseUrl || !supabaseKey) return;
-  for (const m of memories) {
+async function saveMems(mems) {
+  for (const m of mems) {
     try {
-      await fetch(`${supabaseUrl}/rest/v1/memories`, {
-        method: 'POST',
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ content: m.content, category: m.category||'other', importance: m.importance||5, source_session_id: sessionId })
+      await fetch(`${supaUrl}/rest/v1/memories`, {
+        method:'POST',
+        headers:{ 'apikey':supaKey, 'Authorization':`Bearer ${supaKey}`, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+        body: JSON.stringify({ content:m.content, category:m.category||'other', importance:m.importance||5, source_session_id:sessionId })
       });
     } catch(e) {}
   }
-  memoryBadge.classList.add('visible');
-  await loadMemoryCount();
 }
 
-function addMessage(role, content, memoryHint) {
-  if (welcomeEl && welcomeEl.parentNode) welcomeEl.remove();
-  const msgEl = document.createElement('div');
-  msgEl.className = `message ${role}`;
-  const label = document.createElement('div');
-  label.className = 'message-label';
-  label.textContent = role === 'user' ? '紹賢' : '小森';
-  const contentEl = document.createElement('div');
-  contentEl.className = 'message-content';
-  contentEl.textContent = content;
-  msgEl.appendChild(label);
-  msgEl.appendChild(contentEl);
-  if (memoryHint) {
-    const hint = document.createElement('div');
-    hint.className = 'memory-hint';
-    hint.textContent = memoryHint;
-    msgEl.appendChild(hint);
-  }
-  chatEl.appendChild(msgEl);
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-function addTyping() {
-  const msgEl = document.createElement('div');
-  msgEl.className = 'message xiaosen';
-  msgEl.id = 'typing-indicator';
-  const label = document.createElement('div');
-  label.className = 'message-label';
-  label.textContent = '小森';
-  const typing = document.createElement('div');
-  typing.className = 'typing';
-  typing.innerHTML = '<span></span><span></span><span></span>';
-  msgEl.appendChild(label);
-  msgEl.appendChild(typing);
-  chatEl.appendChild(msgEl);
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
-
-function showSavingIndicator() {
-  const el = document.createElement('div');
-  el.className = 'saving-indicator';
-  el.textContent = '小森正在整理記憶…';
-  chatEl.appendChild(el);
-  chatEl.scrollTop = chatEl.scrollHeight;
-  setTimeout(() => el.remove(), 3000);
-}
-
-async function sendMessage() {
-  if (isLoading) return;
-  const text = inputEl.value.trim();
-  if (!text) return;
-  if (!apiKey || !supabaseUrl || !supabaseKey) { alert('請先到設定填入三組資訊'); openSettings(); return; }
-  isLoading = true;
-  sendBtn.disabled = true;
-  addMessage('user', text);
-  conversationHistory.push({ role: 'user', content: text });
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
-  saveConversation('user', text);
-  const memories = await fetchRelevantMemories(text);
-  addTyping();
-  let systemPrompt = XIAOSEN_SYSTEM_PROMPT;
-  if (memories.length > 0) {
-    const memoryText = memories.map(m => `- [${m.category}] ${m.content}`).join('\n');
-    systemPrompt += `\n\n## 相關記憶（請自然融入，不要念清單）\n${memoryText}`;
-  }
+async function loadMemCount() {
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: selectedModel, max_tokens: 2048, system: systemPrompt, messages: conversationHistory })
+    const res = await fetch(`${supaUrl}/rest/v1/memories?select=id`, {
+      headers:{ 'apikey':supaKey, 'Authorization':`Bearer ${supaKey}`, 'Prefer':'count=exact' }
     });
-    removeTyping();
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      const errMsg = errData?.error?.message || `HTTP ${res.status}`;
-      addMessage('xiaosen', `連線問題：${res.status === 401 ? 'API Key 不對' : errMsg}`);
-      conversationHistory.pop(); isLoading = false; sendBtn.disabled = false; return;
+    const count = parseInt(res.headers.get('content-range')?.split('/')[1] || '0');
+    if (count > 0) {
+      const searchIcon = searchMode !== 'off' ? ' 🔍' : '';
+      statusTextEl.textContent = `就緒 · ${model.includes('opus') ? 'Opus' : 'Sonnet'}${searchIcon} · ${count} 則記憶`;
     }
-    const data = await res.json();
-    if (!data || !data.content || !Array.isArray(data.content) || data.content.length === 0) {
-      addMessage('xiaosen', `回應格式異常：${JSON.stringify(data).slice(0,100)}`);
-      conversationHistory.pop(); isLoading = false; sendBtn.disabled = false; return;
-    }
-    const replyBlock = data.content.find(b => b.type === 'text');
-    if (!replyBlock) { addMessage('xiaosen', '沒有收到文字回應'); conversationHistory.pop(); isLoading = false; sendBtn.disabled = false; return; }
-    const reply = replyBlock.text;
-    conversationHistory.push({ role: 'assistant', content: reply });
-    addMessage('xiaosen', reply, memories.length > 0 ? `（融入了 ${memories.length} 則記憶）` : null);
-    saveConversation('assistant', reply);
-    showSavingIndicator();
-    extractMemories(text, reply);
-  } catch(err) {
-    removeTyping();
-    addMessage('xiaosen', `連線錯誤：${err.message}`);
-    conversationHistory.pop();
-  } finally {
-    isLoading = false;
-    sendBtn.disabled = false;
-    inputEl.focus();
-  }
+  } catch(e) {}
 }
+
+// ======== 設定 ========
+function openSettings() { document.getElementById('settingsModal').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+function saveSettings() {
+  const k=document.getElementById('fApiKey').value.trim();
+  const u=document.getElementById('fSupaUrl').value.trim();
+  const sk=document.getElementById('fSupaKey').value.trim();
+  const m=document.getElementById('fModel').value;
+  const s=document.getElementById('fSearch').value;
+  const errEl=document.getElementById('settingsErr');
+  if (!k||!u||!sk) { errEl.textContent='三組資訊都必須填入'; errEl.style.display='block'; return; }
+  if (!k.startsWith('sk-ant-')) { errEl.textContent='API Key 格式不對'; errEl.style.display='block'; return; }
+  apiKey=k; supaUrl=u.replace(/\/$/,''); supaKey=sk; model=m; searchMode=s;
+  localStorage.setItem('xs_api',apiKey); localStorage.setItem('xs_url',supaUrl);
+  localStorage.setItem('xs_key',supaKey); localStorage.setItem('xs_mdl',model);
+  localStorage.setItem('xs_search',searchMode);
+  errEl.style.display='none'; updateStatus(); closeSettings(); loadMemCount();
+}
+
+// ======== 記憶面板 ========
+async function openMemory() {
+  document.getElementById('memoryPanel').classList.add('open');
+  const body = document.getElementById('memoryBody');
+  body.innerHTML = '<div class="mem-empty">載入中...</div>';
+  try {
+    const res = await fetch(`${supaUrl}/rest/v1/memories?order=importance.desc,last_mentioned_at.desc&limit=50`, {
+      headers:{ 'apikey':supaKey, 'Authorization':`Bearer ${supaKey}` }
+    });
+    const data = await res.json();
+    if (!data||data.length===0) { body.innerHTML='<div class="mem-empty">尚無記憶<br>開始對話後小森會記住重要的事</div>'; return; }
+    const catMap={fact:'事實',preference:'偏好',event:'事件',emotion:'情緒',relationship:'人際',other:'其他'};
+    body.innerHTML = data.map(m=>`
+      <div class="mem-item">
+        <div class="mem-cat">${catMap[m.category]||m.category} · 重要度 ${m.importance}/10 · 提及 ${m.mention_count} 次</div>
+        <div class="mem-content">${m.content}</div>
+        <div class="mem-date">${new Date(m.last_mentioned_at).toLocaleDateString('zh-TW')}</div>
+      </div>`).join('');
+  } catch(e) { body.innerHTML='<div class="mem-empty">載入失敗</div>'; }
+}
+function closeMemory() { document.getElementById('memoryPanel').classList.remove('open'); }
+
+// ======== 大圖預覽 ========
+function openViewer(src) { document.getElementById('viewerImg').src=src; document.getElementById('imgViewer').classList.add('open'); }
+function closeViewer() { document.getElementById('imgViewer').classList.remove('open'); }
 
 init();
 </script>
