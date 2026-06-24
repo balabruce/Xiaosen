@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 新手入門教學</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #F0EBE3;
+  --paper: #FFFFFF;
+  --dark: #2A2621;
+  --sage: #7A8471;
+  --accent: #8B4513;
+  --line: #E0D8CC;
+  --muted: #999;
+  --code-bg: #1E1C1A;
+  --code-text: #E8E0D8;
+  --highlight: #D4A96A;
+  --success: #5A8A6A;
+  --warn: #C4833A;
+  --tip: #6A7A8A;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--dark);
+  line-height: 1.8;
+}
+
+/* ── 導覽列 ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(42,38,33,0.97);
+  backdrop-filter: blur(12px);
+  padding: 0 24px;
+  display: flex; align-items: center; gap: 0;
+  height: 52px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.nav-brand {
+  font-size: 15px; font-weight: 500; color: #F0EBE3;
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; white-space: nowrap;
+}
+.nav-brand .badge {
+  background: var(--sage); color: white;
+  font-size: 10px; padding: 2px 7px; border-radius: 10px;
+}
+.nav-links {
+  display: flex; gap: 4px; margin-left: auto;
+  overflow-x: auto; scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  color: #C0B8B0; font-size: 12px; text-decoration: none;
+  padding: 6px 10px; border-radius: 6px; white-space: nowrap;
+  transition: all 0.2s;
+}
+.nav-links a:hover { color: white; background: rgba(255,255,255,0.1); }
+
+/* ── Hero ── */
+.hero {
+  background: var(--dark);
+  padding: 72px 24px 64px;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(122,132,113,0.25) 0%, transparent 70%);
+}
+.hero-tag {
+  display: inline-block;
+  background: rgba(122,132,113,0.3);
+  border: 1px solid rgba(122,132,113,0.5);
+  color: #A8B89A; font-size: 11px; letter-spacing: 0.15em;
+  padding: 5px 14px; border-radius: 20px; margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.hero h1 {
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 700; color: #F0EBE3;
+  line-height: 1.3; margin-bottom: 16px;
+  position: relative;
+}
+.hero h1 span { color: var(--highlight); }
+.hero p {
+  font-size: 16px; color: #A8A098;
+  max-width: 520px; margin: 0 auto 32px;
+  line-height: 1.8;
+}
+.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--sage); color: white;
+  border: none; padding: 12px 24px; border-radius: 10px;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  text-decoration: none; font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-primary:hover { background: #8A9481; transform: translateY(-1px); }
+.btn-outline {
+  background: transparent; color: #C0B8B0;
+  border: 1px solid rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 10px;
+  font-size: 14px; cursor: pointer; text-decoration: none; font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-outline:hover { border-color: rgba(255,255,255,0.4); color: white; }
+
+/* ── 進度指示器 ── */
+.progress-bar {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 24px;
+  display: flex; gap: 8px; align-items: center;
+  overflow-x: auto; scrollbar-width: none;
+}
+.progress-bar::-webkit-scrollbar { display: none; }
+.step-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--bg); border: 1px solid var(--line);
+  padding: 6px 12px; border-radius: 20px;
+  font-size: 12px; white-space: nowrap;
+  color: #888; text-decoration: none;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.step-chip:hover { background: var(--dark); color: white; border-color: var(--dark); }
+.step-chip .num {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--line); color: #666;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 500; flex-shrink: 0;
+}
+.step-chip.done .num { background: var(--success); color: white; }
+.step-chip.done { border-color: var(--success); color: var(--success); }
+
+/* ── 主體 ── */
+.container {
+  max-width: 820px; margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ── 章節 ── */
+.chapter {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+.chapter-header {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-start; gap: 16px;
+}
+.chapter-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--bg); display: flex; align-items: center;
+  justify-content: center; font-size: 22px; flex-shrink: 0;
+}
+.chapter-meta { flex: 1; }
+.chapter-num {
+  font-size: 11px; color: var(--sage); letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.chapter h2 {
+  font-size: 20px; font-weight: 500; color: var(--dark);
+  line-height: 1.4;
+}
+.chapter-body { padding: 24px 28px; }
+
+/* ── 文字 ── */
+p { margin-bottom: 14px; font-size: 15px; color: #333; }
+p:last-child { margin-bottom: 0; }
+strong { color: var(--dark); font-weight: 500; }
+
+/* ── 標題 ── */
+h3 {
+  font-size: 15px; font-weight: 500;
+  color: var(--dark); margin: 24px 0 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--line);
+}
+h3:first-child { margin-top: 0; }
+
+/* ── 程式碼 ── */
+.code-block {
+  background: var(--code-bg);
+  border-radius: 10px; margin: 14px 0;
+  overflow: hidden;
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.code-lang {
+  font-size: 11px; color: var(--highlight);
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;
+}
+.code-copy {
+  background: rgba(255,255,255,0.1); color: #AAA;
+  border: none; padding: 3px 10px; border-radius: 5px;
+  font-size: 11px; cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+}
+.code-copy:hover { background: rgba(255,255,255,0.2); color: white; }
+pre {
+  padding: 16px 18px; overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px; line-height: 1.7;
+  color: var(--code-text);
+}
+pre::-webkit-scrollbar { height: 4px; }
+pre::-webkit-scrollbar-track { background: transparent; }
+pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; background: rgba(122,132,113,0.15);
+  padding: 1px 6px; border-radius: 4px; color: var(--sage);
+}
+.c-comment { color: #6A7868; }
+.c-cmd { color: #A8D090; }
+.c-str { color: var(--highlight); }
+.c-key { color: #90B8E0; }
+.c-prompt { color: #7A9A7A; user-select: none; }
+
+/* ── 提示框 ── */
+.tip-box {
+  border-radius: 10px; padding: 14px 16px;
+  margin: 16px 0; display: flex; gap: 12px; align-items: flex-start;
+}
+.tip-box .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.tip-box .text { font-size: 14px; line-height: 1.7; }
+.tip-box.info { background: #EFF4FF; border: 1px solid #C5D8F8; }
+.tip-box.info .text { color: #3A5A90; }
+.tip-box.warn { background: #FFF8EE; border: 1px solid #F0D090; }
+.tip-box.warn .text { color: #8A5A10; }
+.tip-box.success { background: #EEFAF2; border: 1px solid #A8D8B8; }
+.tip-box.success .text { color: #2A6A4A; }
+.tip-box.pro { background: #F4EFFE; border: 1px solid #C8B0F0; }
+.tip-box.pro .text { color: #5A3A90; }
+
+/* ── 比較表 ── */
+.compare {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin: 16px 0;
+}
+@media (max-width: 580px) { .compare { grid-template-columns: 1fr; } }
+.compare-card {
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 10px; padding: 14px 16px;
+}
+.compare-card .label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.compare-card.bad .label { color: #C06060; }
+.compare-card.good .label { color: var(--success); }
+.compare-card ul { padding-left: 16px; font-size: 13.5px; color: #555; }
+.compare-card ul li { margin-bottom: 6px; }
+
+/* ── 步驟清單 ── */
+.steps { margin: 16px 0; }
+.step-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+}
+.step-item:last-child { border-bottom: none; padding-bottom: 0; }
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--dark); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; flex-shrink: 0; margin-top: 2px;
+}
+.step-content { flex: 1; }
+.step-content strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.step-content p { font-size: 13.5px; color: #666; margin: 0; }
+
+/* ── 指令卡片 ── */
+.cmd-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px; margin: 16px 0;
+}
+.cmd-card {
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px;
+}
+.cmd-card code {
+  display: block; font-size: 13px; color: var(--dark);
+  background: none; padding: 0; margin-bottom: 6px;
+  font-weight: 500;
+}
+.cmd-card p { font-size: 12px; color: #777; margin: 0; }
+
+/* ── 對話示範 ── */
+.demo-chat { margin: 16px 0; }
+.demo-msg {
+  display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start;
+}
+.demo-msg.user { flex-direction: row-reverse; }
+.demo-av {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 500; flex-shrink: 0;
+}
+.demo-av.ai { background: var(--sage); color: white; }
+.demo-av.user { background: var(--dark); color: white; }
+.demo-bubble {
+  max-width: 78%; padding: 10px 14px; border-radius: 14px;
+  font-size: 14px; line-height: 1.7;
+}
+.demo-bubble.ai {
+  background: white; color: var(--dark);
+  border: 1px solid var(--line); border-bottom-left-radius: 4px;
+}
+.demo-bubble.user {
+  background: var(--dark); color: #F0EBE3;
+  border-bottom-right-radius: 4px;
+}
+
+/* ── 標籤頁 ── */
+.tabs { border-bottom: 1px solid var(--line); margin-bottom: 20px; display: flex; gap: 0; }
+.tab-btn {
+  padding: 10px 18px; font-size: 13px; color: #888;
+  border: none; background: none; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  font-family: inherit; transition: all 0.2s;
+}
+.tab-btn.active { color: var(--dark); border-bottom-color: var(--dark); font-weight: 500; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ── 快速參考 ── */
+.ref-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+.ref-table th {
+  background: var(--bg); padding: 10px 14px;
+  text-align: left; font-weight: 500; font-size: 12px;
+  color: #888; border-bottom: 1px solid var(--line);
+}
+.ref-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.ref-table tr:last-child td { border-bottom: none; }
+.ref-table td:first-child code { font-size: 12.5px; }
+.ref-table td:last-child { color: #666; font-size: 13px; }
+
+/* ── 里程碑 ── */
+.milestone {
+  background: linear-gradient(135deg, var(--dark) 0%, #3A3530 100%);
+  border-radius: 12px; padding: 24px;
+  text-align: center; margin: 20px 0;
+  color: #F0EBE3;
+}
+.milestone .emoji { font-size: 36px; margin-bottom: 12px; }
+.milestone h4 { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
+.milestone p { color: #A8A098; font-size: 14px; margin: 0; }
+
+/* ── 頁尾 ── */
+footer {
+  background: var(--dark); color: #888;
+  text-align: center; padding: 40px 24px;
+  font-size: 13px; line-height: 2;
+}
+footer a { color: var(--sage); text-decoration: none; }
+
+/* ── 動畫 ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.chapter { animation: fadeUp 0.4s ease-out both; }
+.chapter:nth-child(1) { animation-delay: 0.05s; }
+.chapter:nth-child(2) { animation-delay: 0.10s; }
+.chapter:nth-child(3) { animation-delay: 0.15s; }
+.chapter:nth-child(4) { animation-delay: 0.20s; }
+.chapter:nth-child(5) { animation-delay: 0.25s; }
+.chapter:nth-child(6) { animation-delay: 0.30s; }
+.chapter:nth-child(7) { animation-delay: 0.35s; }
+</style>
+</head>
+<body>
+
+<!-- 導覽 -->
+<nav>
+  <a class="nav-brand" href="index.html">
+    <span>小森</span>
+    <span class="badge">專案</span>
+  </a>
+  <div class="nav-links">
+    <a href="#what">什麼是</a>
+    <a href="#install">安裝</a>
+    <a href="#first">第一步</a>
+    <a href="#commands">指令</a>
+    <a href="#prompts">提示詞</a>
+    <a href="#workflow">工作流</a>
+    <a href="#practice">實戰</a>
+    <a href="#ref">快速參考</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-tag">完全新手友善 · 繁體中文</div>
+  <h1>Claude Code<br><span>新手入門教學</span></h1>
+  <p>從零開始，手把手帶你用 AI 寫程式。<br>不需要先備知識，看完就能上手。</p>
+  <div class="hero-btns">
+    <a class="btn-primary" href="#what">開始學習</a>
+    <a class="btn-outline" href="#ref">直接看指令表</a>
+  </div>
+</div>
+
+<!-- 進度條 -->
+<div class="progress-bar">
+  <a class="step-chip" href="#what"><span class="num">1</span>概念</a>
+  <a class="step-chip" href="#install"><span class="num">2</span>安裝</a>
+  <a class="step-chip" href="#first"><span class="num">3</span>第一步</a>
+  <a class="step-chip" href="#commands"><span class="num">4</span>指令</a>
+  <a class="step-chip" href="#prompts"><span class="num">5</span>提示詞技巧</a>
+  <a class="step-chip" href="#workflow"><span class="num">6</span>工作流</a>
+  <a class="step-chip" href="#practice"><span class="num">7</span>實戰練習</a>
+</div>
+
+<!-- 主體 -->
+<div class="container">
+
+  <!-- ── 第一章：什麼是 Claude Code ── -->
+  <div class="chapter" id="what">
+    <div class="chapter-header">
+      <div class="chapter-icon">🤖</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">Chapter 01</div>
+        <h2>什麼是 Claude Code？</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+      <p>
+        Claude Code 是 Anthropic 推出的 <strong>AI 程式設計助理工具</strong>，讓你可以在終端機（Terminal）裡直接跟 Claude 對話，請它幫你寫程式、修 Bug、解釋程式碼，甚至整個專案的架構都能一起討論。
+      </p>
+
+      <h3>跟一般 AI 聊天有什麼不同？</h3>
+      <div class="compare">
+        <div class="compare-card bad">
+          <div class="label">❌ 一般 AI 聊天（如 ChatGPT 網頁）</div>
+          <ul>
+            <li>貼程式碼、複製回來，很麻煩</li>
+            <li>AI 看不到你的檔案結構</li>
+            <li>要手動執行每個指令</li>
+            <li>沒辦法直接修改你的程式</li>
+          </ul>
+        </div>
+        <div class="compare-card good">
+          <div class="label">✅ Claude Code</div>
+          <ul>
+            <li>直接在你的專案資料夾工作</li>
+            <li>能讀取、修改、新增任何檔案</li>
+            <li>可以自己執行 Terminal 指令</li>
+            <li>記住整個對話脈絡</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>用一句話形容</h3>
+      <p>
+        Claude Code 就像你多了一個 <strong>超厲害的工程師朋友坐在旁邊</strong>，你說「幫我改這個功能」，他直接拉開你的程式碼開始動工，不需要你解釋上下文、不需要你複製貼上。
+      </p>
+
+      <div class="tip-box info">
+        <div class="icon">💡</div>
+        <div class="text">
+          <strong>小森的例子：</strong>這個網頁版的小森（index.html）本身就是用 Claude Code 開發的。從設計聊天界面、串接 Anthropic API、到加上記憶功能，全程透過對話完成。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 第二章：安裝 ── -->
+  <div class="chapter" id="install">
+    <div class="chapter-header">
+      <div class="chapter-icon">⚙️</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">Chapter 02</div>
+        <h2>安裝 Claude Code</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+
+      <h3>事前準備</h3>
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Node.js（版本 18 以上）</strong>
+            <p>到 <code>nodejs.org</code> 下載安裝。安裝後打開 Terminal 輸入 <code>node -v</code> 確認版本。</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Anthropic API Key</strong>
+            <p>到 <code>console.anthropic.com</code> 註冊帳號，創建 API Key。這是 Claude Code 的「通行證」。</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Terminal（終端機）</strong>
+            <p>Mac 用內建的 Terminal 或 iTerm2，Windows 用 Windows Terminal 或 PowerShell。</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>安裝指令</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">複製</button>
+        </div>
+        <pre><span class="c-comment"># 全域安裝 Claude Code CLI</span>
+<span class="c-cmd">npm install -g @anthropic-ai/claude-code</span>
+
+<span class="c-comment"># 確認安裝成功</span>
+<span class="c-cmd">claude --version</span></pre>
+      </div>
+
+      <h3>設定 API Key</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">複製</button>
+        </div>
+        <pre><span class="c-comment"># 方法一：第一次啟動時 Claude Code 會引導你輸入</span>
+<span class="c-cmd">claude</span>
+
+<span class="c-comment"># 方法二：設定環境變數（長期有效）</span>
+<span class="c-comment"># macOS / Linux</span>
+<span class="c-cmd">echo 'export ANTHROPIC_API_KEY="sk-ant-api03-你的key"' >> ~/.zshrc</span>
+<span class="c-cmd">source ~/.zshrc</span>
+
+<span class="c-comment"># Windows PowerShell</span>
+<span class="c-cmd">[System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", "sk-ant-api03-你的key", "User")</span></pre>
+      </div>
+
+      <div class="tip-box warn">
+        <div class="icon">🔒</div>
+        <div class="text">
+          <strong>API Key 安全提醒：</strong>千萬不要把 API Key 直接寫在程式碼裡或上傳到 GitHub。用環境變數的方式存放最安全。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 第三章：第一次使用 ── -->
+  <div class="chapter" id="first">
+    <div class="chapter-header">
+      <div class="chapter-icon">🚀</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">Chapter 03</div>
+        <h2>第一次啟動 Claude Code</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+
+      <h3>進入專案資料夾，啟動 Claude Code</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">複製</button>
+        </div>
+        <pre><span class="c-comment"># 移動到你的專案資料夾</span>
+<span class="c-cmd">cd /你的專案路徑</span>
+
+<span class="c-comment"># 例如：開發小森這個專案</span>
+<span class="c-cmd">cd ~/projects/xiaosen</span>
+
+<span class="c-comment"># 啟動 Claude Code（進入互動模式）</span>
+<span class="c-cmd">claude</span></pre>
+      </div>
+
+      <h3>你會看到什麼</h3>
+      <p>啟動後進入互動模式，畫面大概長這樣：</p>
+      <div class="demo-chat">
+        <div class="demo-msg ai">
+          <div class="demo-av ai">C</div>
+          <div class="demo-bubble ai">
+            ✻ Welcome to Claude Code!<br><br>
+            /help for help, /status for status<br><br>
+            cwd: /Users/you/projects/xiaosen
+          </div>
+        </div>
+        <div class="demo-msg user">
+          <div class="demo-av user">你</div>
+          <div class="demo-bubble user">這個專案是做什麼的？幫我簡單說明一下</div>
+        </div>
+        <div class="demo-msg ai">
+          <div class="demo-av ai">C</div>
+          <div class="demo-bubble ai">
+            這是一個名為「小森」的 AI 聊天網頁應用，是一個純前端的單頁應用（index.html）。<br><br>
+            主要功能：<br>
+            • 串接 Anthropic Claude API 進行對話<br>
+            • 透過 Supabase 儲存對話記錄和記憶<br>
+            • 支援圖片上傳和網路搜尋<br><br>
+            整個應用只有一個 HTML 檔案，所有的樣式和 JavaScript 都內嵌其中。
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box success">
+        <div class="icon">✅</div>
+        <div class="text">
+          <strong>Claude Code 最強大的地方</strong>是你不需要先解釋專案結構。它會自己讀取當前資料夾的所有檔案，立刻就理解整個專案。
+        </div>
+      </div>
+
+      <h3>單次執行（不進入互動模式）</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">複製</button>
+        </div>
+        <pre><span class="c-comment"># 直接執行一個問題就結束</span>
+<span class="c-cmd">claude "幫我解釋 index.html 這個檔案的結構"</span>
+
+<span class="c-comment"># 或是用 -p 旗標</span>
+<span class="c-cmd">claude -p "列出這個專案所有的函式名稱"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 第四章：核心指令 ── -->
+  <div class="chapter" id="commands">
+    <div class="chapter-header">
+      <div class="chapter-icon">⌨️</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">Chapter 04</div>
+        <h2>互動模式中的核心指令</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+
+      <p>在 Claude Code 的互動模式裡，有一些以 <code>/</code> 開頭的內建指令：</p>
+
+      <h3>最常用指令</h3>
+      <div class="cmd-grid">
+        <div class="cmd-card">
+          <code>/help</code>
+          <p>顯示所有可用指令的說明</p>
+        </div>
+        <div class="cmd-card">
+          <code>/clear</code>
+          <p>清除對話記錄，重新開始（省 Token）</p>
+        </div>
+        <div class="cmd-card">
+          <code>/status</code>
+          <p>查看目前狀態、消耗的 Token 數</p>
+        </div>
+        <div class="cmd-card">
+          <code>/exit</code>
+          <p>離開 Claude Code（或按 Ctrl+C）</p>
+        </div>
+        <div class="cmd-card">
+          <code>/model</code>
+          <p>切換使用的 AI 模型</p>
+        </div>
+        <div class="cmd-card">
+          <code>/cost</code>
+          <p>查看這次對話花了多少費用</p>
+        </div>
+        <div class="cmd-card">
+          <code>/config</code>
+          <p>開啟設定選單</p>
+        </div>
+        <div class="cmd-card">
+          <code>/review</code>
+          <p>查看最近的程式碼修改</p>
+        </div>
+      </div>
+
+      <h3>鍵盤快捷鍵</h3>
+      <table class="ref-table">
+        <tr>
+          <th>按鍵</th>
+          <th>功能</th>
+        </tr>
+        <tr>
+          <td><code>Enter</code></td>
+          <td>送出訊息</td>
+        </tr>
+        <tr>
+          <td><code>Shift + Enter</code></td>
+          <td>換行（不送出）</td>
+        </tr>
+        <tr>
+          <td><code>↑ / ↓</code></td>
+          <td>瀏覽歷史訊息</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl + C</code></td>
+          <td>中斷目前執行中的任務</td>
+        </tr>
+        <tr>
+          <td><code>Ctrl + D</code></td>
+          <td>離開 Claude Code</td>
+        </tr>
+        <tr>
+          <td><code>Esc</code></td>
+          <td>取消正在輸入的訊息</td>
+        </tr>
+      </table>
+
+      <h3>執行模式旗標</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">複製</button>
+        </div>
+        <pre><span class="c-comment"># 不需要確認，直接執行所有操作（小心使用）</span>
+<span class="c-cmd">claude --dangerously-skip-permissions</span>
+
+<span class="c-comment"># 只閱讀，不修改任何檔案</span>
+<span class="c-cmd">claude --no-file-operations</span>
+
+<span class="c-comment"># 指定使用特定模型</span>
+<span class="c-cmd">claude --model claude-opus-4-8</span>
+
+<span class="c-comment"># 把對話記錄儲存到檔案</span>
+<span class="c-cmd">claude --output-format json > session.json</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 第五章：提示詞技巧 ── -->
+  <div class="chapter" id="prompts">
+    <div class="chapter-header">
+      <div class="chapter-icon">💬</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">Chapter 05</div>
+        <h2>怎麼說話 Claude 才聽得懂？</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+
+      <p>提示詞（Prompt）的品質直接影響結果好不好。以下是最實用的幾個原則：</p>
+
+      <h3>原則一：說清楚你要什麼</h3>
+      <div class="compare">
+        <div class="compare-card bad">
+          <div class="label">❌ 太模糊</div>
+          <ul>
+            <li>「幫我改一下這個」</li>
+            <li>「程式壞了怎麼辦」</li>
+            <li>「讓它更好」</li>
+          </ul>
+        </div>
+        <div class="compare-card good">
+          <div class="label">✅ 明確具體</div>
+          <ul>
+            <li>「把 send() 函式的錯誤訊息改成繁體中文」</li>
+            <li>「index.html 第 437 行有 undefined 錯誤，幫我找原因」</li>
+            <li>「讓送出按鈕在訊息為空時變灰色且無法點擊」</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>原則二：給予上下文</h3>
+      <div class="demo-chat">
+        <div class="demo-msg user">
+          <div class="demo-av user">你</div>
+          <div class="demo-bubble user">
+            這個專案是一個 AI 聊天 App（小森）。我想在聊天泡泡上加一個長按複製功能，讓用戶可以長按訊息來複製文字。請幫我實作。
+          </div>
+        </div>
+        <div class="demo-msg ai">
+          <div class="demo-av ai">C</div>
+          <div class="demo-bubble ai">
+            我來幫你在 bubble 元素上加長按複製功能。我會使用 contextmenu 和 touchstart 事件來同時支援桌面右鍵和手機長按…
+          </div>
+        </div>
+      </div>
+
+      <h3>原則三：分步驟處理複雜任務</h3>
+      <div class="tip-box pro">
+        <div class="icon">🧠</div>
+        <div class="text">
+          一次叫 Claude 做太多事，品質會下降。把大任務拆開：先叫他「分析」，再叫他「設計」，最後「實作」。
+        </div>
+      </div>
+
+      <div class="demo-chat">
+        <div class="demo-msg user">
+          <div class="demo-av user">你</div>
+          <div class="demo-bubble user">我想加一個深色模式切換功能。先幫我分析目前的 CSS 架構，不要動程式碼。</div>
+        </div>
+        <div class="demo-msg ai">
+          <div class="demo-av ai">C</div>
+          <div class="demo-bubble ai">目前使用 CSS 變數（:root）管理所有顏色，這非常適合深色模式。主要變數有 --bg、--paper、--user-bubble 等 8 個…</div>
+        </div>
+        <div class="demo-msg user">
+          <div class="demo-av user">你</div>
+          <div class="demo-bubble user">好，現在幫我加深色模式，在 header 加一個切換按鈕。</div>
+        </div>
+      </div>
+
+      <h3>原則四：說明限制條件</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">提示詞範例</span>
+        </div>
+        <pre><span class="c-str">"幫我優化 fetchMemories 函式的效能，
+但不要改變它的 API 介面（函式簽名不能變），
+也不要引入新的外部套件。"</span>
+
+<span class="c-str">"為 send() 函式加上錯誤處理，
+只處理 HTTP 4xx 和 5xx 錯誤，
+網路斷線的情況先不用處理。"</span></pre>
+      </div>
+
+      <h3>常見任務的提示詞模板</h3>
+      <table class="ref-table">
+        <tr>
+          <th>任務類型</th>
+          <th>提示詞模板</th>
+        </tr>
+        <tr>
+          <td>修 Bug</td>
+          <td>「[檔案名] 的 [函式/功能] 出現 [錯誤訊息]，幫我找出原因並修復」</td>
+        </tr>
+        <tr>
+          <td>新增功能</td>
+          <td>「幫我在 [位置] 加上 [功能描述]，需要符合 [限制條件]」</td>
+        </tr>
+        <tr>
+          <td>重構程式碼</td>
+          <td>「[函式/檔案] 太複雜了，幫我重構，保持原有功能不變」</td>
+        </tr>
+        <tr>
+          <td>解釋程式碼</td>
+          <td>「解釋 [函式/模組] 的運作邏輯，用白話文說明」</td>
+        </tr>
+        <tr>
+          <td>寫測試</td>
+          <td>「為 [函式] 寫單元測試，需要涵蓋正常情況和邊界案例」</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 第六章：工作流 ── -->
+  <div class="chapter" id="workflow">
+    <div class="chapter-header">
+      <div class="chapter-icon">🔄</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">Chapter 06</div>
+        <h2>實用工作流程</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+
+      <h3>日常開發流程</h3>
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>進入專案，啟動 Claude Code</strong>
+            <p><code>cd 你的專案 && claude</code></p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>先說明今天要做什麼</strong>
+            <p>「今天我要加深色模式，先讓我解釋一下需求…」</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>叫 Claude 分析、規劃</strong>
+            <p>「根據需求，你覺得要修改哪些地方？列出計劃，先不要動程式碼」</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>逐步確認、實作</strong>
+            <p>「第一步先加 CSS 變數，其他的等我確認後再繼續」</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <strong>測試、修正、提交</strong>
+            <p>「幫我用 Git 提交這些修改，commit message 用繁體中文」</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>管理 CLAUDE.md</h3>
+      <p>
+        在專案根目錄創建 <code>CLAUDE.md</code> 檔案，可以告訴 Claude 這個專案的重要規則，每次啟動都會自動讀取。
+      </p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">CLAUDE.md</span>
+          <button class="code-copy" onclick="copyCode(this)">複製</button>
+        </div>
+        <pre><span class="c-comment"># 小森專案規則</span>
+
+<span class="c-key">## 技術架構</span>
+- 純前端，單一 HTML 檔案（index.html）
+- 使用 Anthropic Claude API（anthropic-version: 2023-06-01）
+- 後端儲存用 Supabase（REST API）
+
+<span class="c-key">## 程式碼規範</span>
+- 所有 UI 文字用繁體中文
+- 不引入外部 JavaScript 套件
+- CSS 變數定義在 :root，不要 hardcode 顏色
+- 錯誤訊息要讓一般使用者看得懂
+
+<span class="c-key">## 不能做的事</span>
+- 不能修改 API endpoint（永遠用 api.anthropic.com）
+- 不能移除 localStorage 相容性
+- 不能破壞現有的記憶功能</pre>
+      </div>
+
+      <h3>控制費用的技巧</h3>
+      <div class="tip-box info">
+        <div class="icon">💰</div>
+        <div class="text">
+          <strong>Token 費用管理：</strong><br>
+          • 用 <code>/clear</code> 定期清除對話，避免 context 太長<br>
+          • 分析/閱讀任務用 <strong>Sonnet</strong>，複雜設計/架構用 <strong>Opus</strong><br>
+          • 用 <code>/cost</code> 隨時查看花費<br>
+          • 不需要 Claude 執行操作時，改用 <code>--no-file-operations</code> 旗標
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 第七章：實戰練習 ── -->
+  <div class="chapter" id="practice">
+    <div class="chapter-header">
+      <div class="chapter-icon">🎯</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">Chapter 07</div>
+        <h2>實戰練習：用小森專案練手</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+
+      <p>用這個小森專案（你現在看的這個網頁的 index.html）來練習：</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(this, 'beginner')">初級練習</button>
+        <button class="tab-btn" onclick="switchTab(this, 'mid')">中級練習</button>
+        <button class="tab-btn" onclick="switchTab(this, 'adv')">進階挑戰</button>
+      </div>
+
+      <div class="tab-content active" id="tab-beginner">
+        <h3>初級：讀懂程式碼</h3>
+        <p>試著對 Claude Code 輸入以下這些問題，看它能不能回答：</p>
+
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">練習指令</span></div>
+          <pre><span class="c-str">"index.html 的 send() 函式做了哪些事？用步驟說明"</span>
+
+<span class="c-str">"SYSTEM 這個常數是什麼？它在哪裡被用到？"</span>
+
+<span class="c-str">"記憶功能的流程是什麼？從用戶送訊息到儲存記憶，整個流程說明一下"</span>
+
+<span class="c-str">"這個專案用了哪些 Anthropic API 的功能？"</span></pre>
+        </div>
+
+        <div class="tip-box success">
+          <div class="icon">🎓</div>
+          <div class="text">目標：能讓 Claude 解釋你不懂的程式碼段落。</div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-mid">
+        <h3>中級：修改功能</h3>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">練習指令</span></div>
+          <pre><span class="c-str">"在聊天界面的右上角加一個『清除對話』按鈕，點了就清空畫面上的訊息"</span>
+
+<span class="c-str">"把 header 的狀態文字改成顯示『已連線 · Sonnet · 🔍搜尋開啟』這樣的格式"</span>
+
+<span class="c-str">"在 addMsg 函式加上防 XSS 處理，確保訊息內容不會被當 HTML 執行"</span>
+
+<span class="c-str">"幫我把 needsSearch 函式的關鍵字清單改成可以在設定裡客製化"</span></pre>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-adv">
+        <h3>進階：獨立開發功能</h3>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">練習指令</span></div>
+          <pre><span class="c-str">"幫我加一個對話匯出功能，可以把聊天記錄下載成純文字檔"</span>
+
+<span class="c-str">"幫我實作訊息搜尋功能，可以在對話裡全文搜尋"</span>
+
+<span class="c-str">"我想讓小森能記住用戶的語氣偏好（正式/輕鬆），並自動調整說話方式，幫我設計這個功能"</span></pre>
+        </div>
+
+        <div class="tip-box pro">
+          <div class="icon">🏆</div>
+          <div class="text">進階練習不只是「叫 Claude 做」，而是你要跟 Claude 一起討論設計，再讓它實作。試著問「有哪些方法可以做到？各自的優缺點是什麼？」</div>
+        </div>
+      </div>
+
+      <div class="milestone">
+        <div class="emoji">🎉</div>
+        <h4>恭喜完成入門教學！</h4>
+        <p>你現在已經有足夠的知識開始用 Claude Code 開發真實的專案了。<br>記住：多試多問，Claude 不會不耐煩。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 快速參考表 ── -->
+  <div class="chapter" id="ref">
+    <div class="chapter-header">
+      <div class="chapter-icon">📋</div>
+      <div class="chapter-meta">
+        <div class="chapter-num">快速參考</div>
+        <h2>常用指令速查表</h2>
+      </div>
+    </div>
+    <div class="chapter-body">
+
+      <h3>互動模式指令</h3>
+      <table class="ref-table">
+        <tr><th>指令</th><th>說明</th></tr>
+        <tr><td><code>/help</code></td><td>顯示說明</td></tr>
+        <tr><td><code>/clear</code></td><td>清除對話（節省 Token）</td></tr>
+        <tr><td><code>/status</code></td><td>查看狀態與 Token 消耗</td></tr>
+        <tr><td><code>/cost</code></td><td>查看費用</td></tr>
+        <tr><td><code>/model</code></td><td>切換模型</td></tr>
+        <tr><td><code>/config</code></td><td>開啟設定</td></tr>
+        <tr><td><code>/exit</code></td><td>離開</td></tr>
+      </table>
+
+      <h3>CLI 旗標</h3>
+      <table class="ref-table">
+        <tr><th>指令</th><th>說明</th></tr>
+        <tr><td><code>claude</code></td><td>啟動互動模式</td></tr>
+        <tr><td><code>claude "問題"</code></td><td>單次問答</td></tr>
+        <tr><td><code>claude -p "問題"</code></td><td>單次問答（同上）</td></tr>
+        <tr><td><code>claude --model &lt;id&gt;</code></td><td>指定模型</td></tr>
+        <tr><td><code>claude --version</code></td><td>查看版本</td></tr>
+      </table>
+
+      <h3>模型 ID 速查</h3>
+      <table class="ref-table">
+        <tr><th>模型</th><th>ID</th><th>適合場景</th></tr>
+        <tr>
+          <td>Sonnet 4.6</td>
+          <td><code>claude-sonnet-4-6</code></td>
+          <td>日常開發，速度快費用低</td>
+        </tr>
+        <tr>
+          <td>Opus 4.8</td>
+          <td><code>claude-opus-4-8</code></td>
+          <td>複雜架構設計，能力最強</td>
+        </tr>
+        <tr>
+          <td>Haiku 4.5</td>
+          <td><code>claude-haiku-4-5-20251001</code></td>
+          <td>簡單任務，速度最快費用最低</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 頁尾 -->
+<footer>
+  <p>Claude Code 新手入門教學 · 為小森專案設計</p>
+  <p>文件版本 1.0 · 2026 年 · 以 <a href="index.html">小森 v2.1</a> 為實作範例</p>
+</footer>
+
+<script>
+// 複製功能
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  const text = pre.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '已複製！';
+    setTimeout(() => btn.textContent = '複製', 1800);
+  });
+}
+
+// 標籤頁切換
+function switchTab(btn, id) {
+  const chapter = btn.closest('.chapter-body');
+  chapter.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  chapter.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// 滾動高亮導覽
+const sections = document.querySelectorAll('[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.style.color = a.getAttribute('href') === '#' + current ? 'white' : '';
+    a.style.background = a.getAttribute('href') === '#' + current ? 'rgba(255,255,255,0.12)' : '';
+  });
+});
+</script>
+</body>
+</html>
