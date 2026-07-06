@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>K線畫線練習</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
+:root{
+  --bg:#0e1420; --panel:#131b2b; --panel2:#182338; --grid:#1e2a3d;
+  --text:#d6e0ee; --muted:#7d8da5; --line:#26344a;
+  --up:#26a69a; --down:#ef5350; --accent:#f5c542; --blue:#4a9eff;
+  --ok:#34d399; --bad:#ff6b6b;
+}
+html,body{height:100%;}
+body{ background:var(--bg); color:var(--text); font-family:-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; overflow-y:auto; }
+.app{ max-width:760px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+
+/* Header */
+.top{ padding:14px 16px 8px; display:flex; align-items:center; justify-content:space-between; }
+.brand{ display:flex; align-items:center; gap:9px; }
+.logo{ width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,#26a69a,#4a9eff); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:#06121f; }
+.brand h1{ font-size:16px; font-weight:600; letter-spacing:.5px; }
+.brand span{ font-size:11px; color:var(--muted); }
+.score-pill{ font-size:12px; color:var(--muted); background:var(--panel); padding:6px 11px; border-radius:20px; border:1px solid var(--line); }
+.score-pill b{ color:var(--accent); }
+
+/* Question card */
+.qcard{ margin:6px 12px 8px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
+.qtop{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.chip{ font-size:11px; padding:3px 9px; border-radius:20px; background:var(--panel2); color:var(--blue); border:1px solid #24406b; font-weight:500; }
+.qnum{ font-size:11px; color:var(--muted); }
+.qtitle{ font-size:15px; font-weight:600; line-height:1.5; }
+.qhint{ font-size:12px; color:var(--muted); margin-top:5px; line-height:1.5; }
+
+/* Chart */
+.chartwrap{ margin:0 12px; background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; position:relative; touch-action:none; }
+canvas{ display:block; width:100%; }
+.canvas-hint{ position:absolute; left:10px; top:8px; font-size:11px; color:var(--muted); pointer-events:none; opacity:.85; }
+
+/* Controls */
+.controls{ padding:12px; display:flex; flex-direction:column; gap:10px; }
+.row{ display:flex; gap:8px; flex-wrap:wrap; }
+.row.tools .btn{ flex:1; min-width:0; }
+select,.btn{ font-family:inherit; font-size:13.5px; border-radius:11px; padding:11px 12px; cursor:pointer; border:1px solid var(--line); background:var(--panel2); color:var(--text); font-weight:500; transition:.15s; }
+select{ flex:1; appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%237d8da5'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat:no-repeat; background-position:right 12px center; padding-right:30px; }
+.btn:active{ transform:scale(.97); }
+.btn.primary{ background:linear-gradient(135deg,#2a7d8c,#3a6fd0); border-color:transparent; color:#eaf4ff; }
+.btn.ghost{ background:var(--panel); }
+.btn.gold{ background:linear-gradient(135deg,#c99a2e,#e0b84a); border-color:transparent; color:#1a1206; }
+.btn.wide{ flex:1; }
+
+/* toggles */
+.toggles{ display:flex; gap:14px; flex-wrap:wrap; padding:2px 2px; }
+.tg{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); cursor:pointer; }
+.tg input{ accent-color:var(--blue); width:15px; height:15px; }
+.tg b{ color:var(--text); font-weight:500; }
+
+/* result */
+.result{ margin:2px 12px 16px; display:none; }
+.result.show{ display:block; animation:fade .3s; }
+@keyframes fade{ from{opacity:0;transform:translateY(4px)} to{opacity:1} }
+.rbar{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:13px 15px; }
+.rhead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.rscore{ font-size:22px; font-weight:700; }
+.rverdict{ font-size:13px; font-weight:600; padding:4px 10px; border-radius:20px; }
+.rline{ font-size:13px; padding:6px 0; display:flex; gap:8px; align-items:flex-start; line-height:1.5; border-top:1px dashed var(--line); }
+.rline:first-of-type{ border-top:none; }
+.rmark{ font-weight:700; flex-shrink:0; }
+.rmuted{ color:var(--muted); font-size:12px; }
+
+.legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); padding:0 2px; }
+.legend i{ display:inline-block; width:14px; height:0; border-top:3px solid; vertical-align:middle; margin-right:5px; border-radius:2px; }
+.foot{ text-align:center; font-size:11px; color:var(--muted); padding:4px 16px 24px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <div class="logo">K</div>
+      <div>
+        <h1>K線畫線練習</h1>
+        <span>壓力・支撐・趨勢・通道・頸線</span>
+      </div>
+    </div>
+    <div class="score-pill">已練 <b id="doneCount">0</b> 題 · 均分 <b id="avgScore">–</b></div>
+  </div>
+
+  <div class="qcard">
+    <div class="qtop">
+      <span class="chip" id="qChip">題型</span>
+      <span class="qnum" id="qNum">第 1 題</span>
+    </div>
+    <div class="qtitle" id="qTitle">載入中…</div>
+    <div class="qhint" id="qHint"></div>
+  </div>
+
+  <div class="chartwrap" id="chartwrap">
+    <span class="canvas-hint">👆 在圖上拖曳畫線</span>
+    <canvas id="cv"></canvas>
+  </div>
+
+  <div class="controls">
+    <div class="legend">
+      <span><i style="border-color:var(--accent)"></i>你畫的線</span>
+      <span><i style="border-color:var(--bad)"></i>壓力</span>
+      <span><i style="border-color:var(--ok)"></i>支撐</span>
+      <span><i style="border-color:var(--blue)"></i>參考答案</span>
+    </div>
+
+    <div class="row">
+      <select id="typeSel">
+        <option value="random">🎲 隨機出題</option>
+        <option value="hres">水平壓力線</option>
+        <option value="hsup">水平支撐線</option>
+        <option value="uptrend">上升趨勢線（支撐）</option>
+        <option value="downtrend">下降趨勢線（壓力）</option>
+        <option value="chup">上升通道</option>
+        <option value="chdown">下降通道</option>
+        <option value="dtop">頸線（雙頂 M頭）</option>
+        <option value="dbot">頸線（雙底 W底）</option>
+      </select>
+      <button class="btn primary" id="newBtn">新題目</button>
+    </div>
+
+    <div class="toggles">
+      <label class="tg"><input type="checkbox" id="maToggle"><b>均線</b> MA5/MA20</label>
+      <label class="tg"><input type="checkbox" id="snapToggle" checked><b>水平吸附</b></label>
+    </div>
+
+    <div class="row tools">
+      <button class="btn ghost" id="undoBtn">↩ 復原</button>
+      <button class="btn ghost" id="clearBtn">🗑 清除</button>
+      <button class="btn ghost" id="revealBtn">👁 看答案</button>
+    </div>
+    <div class="row">
+      <button class="btn gold wide" id="checkBtn">✓ 對答案</button>
+    </div>
+  </div>
+
+  <div class="result" id="result"><div class="rbar" id="rbar"></div></div>
+
+  <div class="foot">
+    練習方式：先看題目要你畫哪種線 → 在圖上拖曳畫出 → 按「對答案」看準不準。<br>
+    支援多條線（通道要畫兩條）。「看答案」會用藍色虛線疊上正解。
+  </div>
+</div>
+
+<script>
+"use strict";
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const wrap = document.getElementById('chartwrap');
+
+const N = 60;
+let cssW=360, cssH=440, dpr=1;
+
+// layout (computed on resize)
+let L={};
+function computeLayout(){
+  L.left = 6;
+  L.right = cssW - 52;
+  L.w = L.right - L.left;
+  L.priceTop = 12;
+  L.priceBot = Math.round(cssH*0.64);
+  L.volTop = Math.round(cssH*0.70);
+  L.volBot = Math.round(cssH*0.955);
+  L.cw = L.w / N;
+}
+
+// ---------- utilities ----------
+const rand=(a,b)=>a+Math.random()*(b-a);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+// ---------- candle builder from swing points ----------
+// swings: [{i, t:'H'|'L', p}] sorted by i. Builds N OHLC candles whose
+// swing highs/lows exactly touch the given prices (clean, teachable touches).
+function buildCandles(swings, opts={}){
+  swings = swings.slice().sort((a,b)=>a.i-b.i);
+  const first=swings[0], last=swings[swings.length-1];
+  const allP=swings.map(s=>s.p);
+  const range=Math.max(...allP)-Math.min(...allP)||20;
+  const c=[]; let prevClose=first.p;
+  const swMap={}; swings.forEach(s=>swMap[s.i]=s);
+  for(let t=0;t<N;t++){
+    const tc=clamp(t,first.i,last.i);
+    // find segment
+    let k=0; while(k<swings.length-1 && !(swings[k].i<=tc && tc<=swings[k+1].i)) k++;
+    const s0=swings[k], s1=swings[Math.min(k+1,swings.length-1)];
+    const frac=s1.i===s0.i?0:(tc-s0.i)/(s1.i-s0.i);
+    const path=lerp(s0.p,s1.p,frac);
+    let close=path+rand(-1,1)*range*0.018;
+    let open=(t===0)?path:prevClose;
+    let wick=range*0.012*(0.4+Math.random());
+    let hi=Math.max(open,close)+wick;
+    let lo=Math.min(open,close)-wick;
+
+    const sw=swMap[t];
+    if(sw){
+      if(sw.t==='H'){
+        hi=sw.p;
+        close=sw.p-range*0.02*(0.4+Math.random());
+        open=clamp(open,lo+range*0.005,sw.p-range*0.006);
+        lo=Math.min(open,close)-wick*0.7;
+      }else{
+        lo=sw.p;
+        close=sw.p+range*0.02*(0.4+Math.random());
+        open=clamp(open,sw.p+range*0.006,hi-range*0.005);
+        hi=Math.max(open,close)+wick*0.7;
+      }
+    }
+    // horizontal ceiling / floor clamps for clean levels
+    if(opts.ceiling!=null){ hi=Math.min(hi,opts.ceiling); close=Math.min(close,opts.ceiling); open=Math.min(open,opts.ceiling); }
+    if(opts.floor!=null){ lo=Math.max(lo,opts.floor); close=Math.max(close,opts.floor); open=Math.max(open,opts.floor); }
+    hi=Math.max(hi,open,close); lo=Math.min(lo,open,close);
+    c.push({o:open,h:hi,l:lo,c:close});
+    prevClose=close;
+  }
+  return c;
+}
+
+function makeVolumes(candles, spikeIdx=[]){
+  const base=rand(60,120);
+  return candles.map((cd,t)=>{
+    let v=base*(0.55+Math.random()*0.7);
+    if(cd.c<cd.o) v*=1.05;
+    if(spikeIdx.includes(t)) v*=rand(1.6,2.4);
+    if(t>=N-3) v*=rand(1.3,2.0);
+    return v;
+  });
+}
+
+// build a line descriptor from pivots (first & last define slope)
+function lineFromPivots(pivots, kind, label, color){
+  const a=pivots[0], b=pivots[pivots.length-1];
+  const slope=(b.x===a.x)?0:(b.y-a.y)/(b.x-a.x);
+  const intercept=a.y-slope*a.x;
+  return {kind, slope, intercept, pivots, label, color,
+          val:x=>intercept+slope*x};
+}
+
+// ---------- problem generators ----------
+function genHRes(){
+  const R=rand(112,150), lowGap=()=>R-rand(7,16);
+  const sw=[
+    {i:2,t:'L',p:lowGap()},
+    {i:12,t:'H',p:R},
+    {i:22,t:'L',p:lowGap()},
+    {i:31,t:'H',p:R},
+    {i:41,t:'L',p:lowGap()},
+    {i:49,t:'H',p:R},
+    {i:59,t:'L',p:R-rand(16,26)}
+  ];
+  const candles=buildCandles(sw,{ceiling:R});
+  return {
+    type:'hres', chip:'水平壓力線', color:'var(--bad)',
+    title:'畫出這張圖的「水平壓力線」',
+    hint:'股價多次上攻到同一價位就被壓回 → 把這些高點連成一條水平線。',
+    candles, volumes:makeVolumes(candles,[12,31,49,59]),
+    answer:{ lines:[ lineFromPivots(
+      [{x:12,y:R},{x:31,y:R},{x:49,y:R}],'horizontal','壓力線','#ff6b6b') ] }
+  };
+}
+function genHSup(){
+  const S=rand(90,120), hiGap=()=>S+rand(7,16);
+  const sw=[
+    {i:2,t:'H',p:hiGap()},
+    {i:12,t:'L',p:S},
+    {i:22,t:'H',p:hiGap()},
+    {i:31,t:'L',p:S},
+    {i:41,t:'H',p:hiGap()},
+    {i:49,t:'L',p:S},
+    {i:59,t:'H',p:S+rand(16,26)}
+  ];
+  const candles=buildCandles(sw,{floor:S});
+  return {
+    type:'hsup', chip:'水平支撐線', color:'var(--ok)',
+    title:'畫出這張圖的「水平支撐線」',
+    hint:'股價多次跌到同一價位就被撐住反彈 → 把這些低點連成一條水平線。',
+    candles, volumes:makeVolumes(candles,[12,31,49,59]),
+    answer:{ lines:[ lineFromPivots(
+      [{x:12,y:S},{x:31,y:S},{x:49,y:S}],'horizontal','支撐線','#34d399') ] }
+  };
+}
+function genUptrend(){
+  const b=rand(88,108), sl=rand(0.45,0.85);
+  const low=i=>b+sl*i;
+  const sw=[
+    {i:3,t:'L',p:low(3)},
+    {i:12,t:'H',p:low(12)+rand(12,20)},
+    {i:20,t:'L',p:low(20)},
+    {i:30,t:'H',p:low(30)+rand(14,22)},
+    {i:38,t:'L',p:low(38)},
+    {i:48,t:'H',p:low(48)+rand(12,20)},
+    {i:57,t:'L',p:low(57)}
+  ];
+  const candles=buildCandles(sw);
+  return {
+    type:'uptrend', chip:'上升趨勢線', color:'var(--ok)',
+    title:'畫出這張圖的「上升趨勢線」',
+    hint:'一波比一波高的「低點」連起來，就是上升趨勢的支撐線（往右上斜）。',
+    candles, volumes:makeVolumes(candles,[3,20,38,57]),
+    answer:{ lines:[ lineFromPivots(
+      [{x:3,y:low(3)},{x:20,y:low(20)},{x:38,y:low(38)},{x:57,y:low(57)}],'trend','上升趨勢線','#34d399') ] }
+  };
+}
+function genDowntrend(){
+  const b=rand(140,160), sl=rand(-0.85,-0.45);
+  const hi=i=>b+sl*i;
+  const sw=[
+    {i:3,t:'H',p:hi(3)},
+    {i:12,t:'L',p:hi(12)-rand(12,20)},
+    {i:20,t:'H',p:hi(20)},
+    {i:30,t:'L',p:hi(30)-rand(14,22)},
+    {i:38,t:'H',p:hi(38)},
+    {i:48,t:'L',p:hi(48)-rand(12,20)},
+    {i:57,t:'H',p:hi(57)}
+  ];
+  const candles=buildCandles(sw);
+  return {
+    type:'downtrend', chip:'下降趨勢線', color:'var(--bad)',
+    title:'畫出這張圖的「下降趨勢線」',
+    hint:'一波比一波低的「高點」連起來，就是下降趨勢的壓力線（往右下斜）。',
+    candles, volumes:makeVolumes(candles,[3,20,38,57]),
+    answer:{ lines:[ lineFromPivots(
+      [{x:3,y:hi(3)},{x:20,y:hi(20)},{x:38,y:hi(38)},{x:57,y:hi(57)}],'trend','下降趨勢線','#ff6b6b') ] }
+  };
+}
+function genChannel(up){
+  const sl=up?rand(0.45,0.8):-rand(0.45,0.8);
+  const b1=up?rand(90,105):rand(135,150);       // lower line base
+  const width=rand(20,30);
+  const low=i=>b1+sl*i, high=i=>b1+width+sl*i;
+  const sw=[
+    {i:3,t:'L',p:low(3)},
+    {i:11,t:'H',p:high(11)},
+    {i:20,t:'L',p:low(20)},
+    {i:29,t:'H',p:high(29)},
+    {i:38,t:'L',p:low(38)},
+    {i:47,t:'H',p:high(47)},
+    {i:56,t:'L',p:low(56)}
+  ];
+  const candles=buildCandles(sw);
+  return {
+    type:up?'chup':'chdown', chip:up?'上升通道':'下降通道', color:'var(--blue)',
+    title:`畫出這張圖的「${up?'上升':'下降'}通道」（兩條平行線）`,
+    hint:'畫兩條線：一條連低點（支撐）、一條連高點（壓力），兩條大致平行。',
+    candles, volumes:makeVolumes(candles,[3,20,38,56]),
+    answer:{ lines:[
+      lineFromPivots([{x:3,y:low(3)},{x:20,y:low(20)},{x:38,y:low(38)},{x:56,y:low(56)}],'trend','通道下軌（支撐）','#34d399'),
+      lineFromPivots([{x:11,y:high(11)},{x:29,y:high(29)},{x:47,y:high(47)}],'trend','通道上軌（壓力）','#ff6b6b')
+    ] }
+  };
+}
+function genDoubleTop(){
+  const R=rand(140,158), Nk=R-rand(16,24);
+  const sw=[
+    {i:3,t:'L',p:Nk-rand(3,9)},
+    {i:15,t:'H',p:R},
+    {i:27,t:'L',p:Nk},
+    {i:39,t:'H',p:R},
+    {i:50,t:'L',p:Nk-rand(14,22)},
+    {i:59,t:'L',p:Nk-rand(18,28)}
+  ];
+  const candles=buildCandles(sw);
+  return {
+    type:'dtop', chip:'頸線 · 雙頂 M頭', color:'var(--bad)',
+    title:'畫出這個「M頭」的頸線',
+    hint:'兩個一樣高的頭 → 頸線是「兩頭之間那個低點」拉出的水平線，跌破頸線是賣訊。',
+    candles, volumes:makeVolumes(candles,[15,39,50,59]),
+    answer:{ lines:[ lineFromPivots(
+      [{x:27,y:Nk},{x:50,y:Nk}],'horizontal','頸線','#a78bfa') ] }
+  };
+}
+function genDoubleBot(){
+  const S=rand(92,110), Nk=S+rand(16,24);
+  const sw=[
+    {i:3,t:'H',p:Nk+rand(3,9)},
+    {i:15,t:'L',p:S},
+    {i:27,t:'H',p:Nk},
+    {i:39,t:'L',p:S},
+    {i:50,t:'H',p:Nk+rand(14,22)},
+    {i:59,t:'H',p:Nk+rand(18,28)}
+  ];
+  const candles=buildCandles(sw);
+  return {
+    type:'dbot', chip:'頸線 · 雙底 W底', color:'var(--ok)',
+    title:'畫出這個「W底」的頸線',
+    hint:'兩個一樣低的底 → 頸線是「兩底之間那個高點」拉出的水平線，突破頸線是買訊。',
+    candles, volumes:makeVolumes(candles,[15,39,50,59]),
+    answer:{ lines:[ lineFromPivots(
+      [{x:27,y:Nk},{x:50,y:Nk}],'horizontal','頸線','#a78bfa') ] }
+  };
+}
+
+const GENS={ hres:genHRes, hsup:genHSup, uptrend:genUptrend, downtrend:genDowntrend,
+  chup:()=>genChannel(true), chdown:()=>genChannel(false), dtop:genDoubleTop, dbot:genDoubleBot };
+const GEN_KEYS=Object.keys(GENS);
+
+// ---------- state ----------
+let problem=null;
+let priceMin=0, priceMax=1, volMax=1;
+let userLines=[];        // {x1,y1,x2,y2} in data coords (x=index, y=price)
+let drag=null;           // {x1,y1,x2,y2} in pixels during a drag
+let showAnswer=false;
+let stats={done:0, total:0};
+
+// ---------- coord maps ----------
+const idxToX=i=>L.left + i*L.cw + L.cw/2;
+const xToIdx=px=>(px-L.left-L.cw/2)/L.cw;
+const priceToY=p=>L.priceBot-(p-priceMin)/(priceMax-priceMin)*(L.priceBot-L.priceTop);
+const yToPrice=y=>priceMin+(L.priceBot-y)/(L.priceBot-L.priceTop)*(priceMax-priceMin);
+
+function computeScale(){
+  let lo=Infinity, hi=-Infinity;
+  problem.candles.forEach(cd=>{ lo=Math.min(lo,cd.l); hi=Math.max(hi,cd.h); });
+  problem.answer.lines.forEach(ln=>{
+    ln.pivots.forEach(pv=>{ lo=Math.min(lo,pv.y); hi=Math.max(hi,pv.y); });
+  });
+  const pad=(hi-lo)*0.08;
+  priceMin=lo-pad; priceMax=hi+pad;
+  volMax=Math.max(...problem.volumes);
+}
+
+// ---------- drawing ----------
+function draw(){
+  ctx.clearRect(0,0,cssW,cssH);
+  // panels bg
+  ctx.fillStyle='#101827';
+  ctx.fillRect(0,0,cssW,cssH);
+
+  drawGrid();
+  drawVolumes();
+  if(document.getElementById('maToggle').checked) drawMAs();
+  drawCandles();
+  if(showAnswer) drawAnswerLines();
+  drawUserLines();
+  if(drag) drawPreview();
+}
+
+function drawGrid(){
+  ctx.strokeStyle='#1b2740'; ctx.lineWidth=1;
+  ctx.fillStyle='#5f6f88'; ctx.font='10px sans-serif'; ctx.textAlign='left';
+  const steps=5;
+  for(let s=0;s<=steps;s++){
+    const p=priceMin+(priceMax-priceMin)*s/steps;
+    const y=priceToY(p);
+    ctx.beginPath(); ctx.moveTo(L.left,y); ctx.lineTo(L.right,y); ctx.stroke();
+    ctx.fillText(p.toFixed(1), L.right+5, y+3);
+  }
+  // vol baseline
+  ctx.strokeStyle='#16223a';
+  ctx.beginPath(); ctx.moveTo(L.left,L.volBot); ctx.lineTo(L.right,L.volBot); ctx.stroke();
+  ctx.fillStyle='#4a5872'; ctx.fillText('量', L.right+5, L.volTop+8);
+}
+
+function drawCandles(){
+  const bw=Math.max(2,L.cw*0.62);
+  problem.candles.forEach((cd,t)=>{
+    const x=idxToX(t);
+    const up=cd.c>=cd.o;
+    const col=up?'#26a69a':'#ef5350';
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=1;
+    // wick
+    ctx.beginPath(); ctx.moveTo(x,priceToY(cd.h)); ctx.lineTo(x,priceToY(cd.l)); ctx.stroke();
+    // body
+    const yo=priceToY(cd.o), yc=priceToY(cd.c);
+    const top=Math.min(yo,yc), h=Math.max(1,Math.abs(yo-yc));
+    ctx.fillRect(x-bw/2, top, bw, h);
+  });
+}
+
+function drawVolumes(){
+  const bw=Math.max(2,L.cw*0.62);
+  problem.volumes.forEach((v,t)=>{
+    const x=idxToX(t);
+    const cd=problem.candles[t];
+    const h=(v/volMax)*(L.volBot-L.volTop);
+    ctx.fillStyle=cd.c>=cd.o?'rgba(38,166,154,0.45)':'rgba(239,83,80,0.45)';
+    ctx.fillRect(x-bw/2, L.volBot-h, bw, h);
+  });
+}
+
+function ma(period,t){
+  if(t<period-1) return null;
+  let s=0; for(let i=t-period+1;i<=t;i++) s+=problem.candles[i].c;
+  return s/period;
+}
+function drawMAs(){
+  [[5,'#f0b429'],[20,'#4a9eff']].forEach(([p,col])=>{
+    ctx.strokeStyle=col; ctx.lineWidth=1.3; ctx.beginPath(); let started=false;
+    for(let t=0;t<N;t++){ const m=ma(p,t); if(m==null) continue;
+      const x=idxToX(t), y=priceToY(m);
+      if(!started){ctx.moveTo(x,y);started=true;} else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  });
+}
+
+function clipLineToPlot(x1,y1,x2,y2){
+  // draw across full plot width using the line's slope
+  return {x1,y1,x2,y2};
+}
+function drawDataLine(x1,y1,x2,y2,color,width,dash){
+  const slope=(x2===x1)?0:(y2-y1)/(x2-x1);
+  const inter=y1-slope*x1;
+  // extend to plot edges (index 0..N-1)
+  const iA=0, iB=N-1;
+  const pA=inter+slope*iA, pB=inter+slope*iB;
+  ctx.save();
+  ctx.setLineDash(dash||[]);
+  ctx.strokeStyle=color; ctx.lineWidth=width;
+  ctx.beginPath();
+  ctx.moveTo(idxToX(iA),priceToY(pA));
+  ctx.lineTo(idxToX(iB),priceToY(pB));
+  ctx.stroke();
+  ctx.restore();
+}
+function drawUserLines(){
+  userLines.forEach(ln=>{
+    drawDataLine(ln.x1,ln.y1,ln.x2,ln.y2,'#f5c542',2.2);
+  });
+}
+function drawAnswerLines(){
+  problem.answer.lines.forEach(ln=>{
+    const a=ln.pivots[0], b=ln.pivots[ln.pivots.length-1];
+    drawDataLine(a.x,a.y,b.x,b.y,'#4a9eff',2,[7,5]);
+    // label + pivot dots
+    ctx.fillStyle='#4a9eff';
+    ln.pivots.forEach(pv=>{ ctx.beginPath(); ctx.arc(idxToX(pv.x),priceToY(pv.y),3.2,0,7); ctx.fill(); });
+    ctx.font='11px sans-serif'; ctx.textAlign='left';
+    const lx=idxToX(a.x), ly=priceToY(ln.val(a.x));
+    ctx.fillText(ln.label, Math.min(lx+6,cssW-90), ly-6);
+  });
+}
+function drawPreview(){
+  ctx.save();
+  ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(245,197,66,0.9)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(drag.x1,drag.y1); ctx.lineTo(drag.x2,drag.y2); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- pointer / drawing ----------
+function getPos(e){
+  const r=cv.getBoundingClientRect();
+  const src=e.touches?e.touches[0]:e;
+  return { x:clamp(src.clientX-r.left,L.left,L.right),
+           y:clamp(src.clientY-r.top,L.priceTop-30,L.volBot) };
+}
+function onDown(e){
+  e.preventDefault();
+  const p=getPos(e);
+  drag={x1:p.x,y1:p.y,x2:p.x,y2:p.y};
+}
+function onMove(e){
+  if(!drag) return;
+  e.preventDefault();
+  const p=getPos(e);
+  drag.x2=p.x; drag.y2=p.y;
+  draw();
+}
+function onUp(e){
+  if(!drag) return;
+  e.preventDefault();
+  let {x1,y1,x2,y2}=drag;
+  drag=null;
+  // ignore taps
+  if(Math.hypot(x2-x1,y2-y1)<14){ draw(); return; }
+  // horizontal snap
+  if(document.getElementById('snapToggle').checked && Math.abs(y2-y1)<16){ y2=y1; }
+  userLines.push({ x1:xToIdx(x1), y1:yToPrice(y1), x2:xToIdx(x2), y2:yToPrice(y2) });
+  draw();
+}
+cv.addEventListener('mousedown',onDown);
+window.addEventListener('mousemove',onMove);
+window.addEventListener('mouseup',onUp);
+cv.addEventListener('touchstart',onDown,{passive:false});
+cv.addEventListener('touchmove',onMove,{passive:false});
+cv.addEventListener('touchend',onUp,{passive:false});
+
+// ---------- checking ----------
+function userVal(ln,x){
+  const slope=(ln.x2===ln.x1)?0:(ln.y2-ln.y1)/(ln.x2-ln.x1);
+  return ln.y1+slope*(x-ln.x1);
+}
+function userSlope(ln){
+  return (ln.x2===ln.x1)?0:(ln.y2-ln.y1)/(ln.x2-ln.x1);
+}
+function check(){
+  const range=priceMax-priceMin;
+  const tol=range*0.045;
+  if(userLines.length===0){
+    showResult(0,[{ok:false,label:'還沒畫線',msg:'先在圖上拖曳畫出你的答案再來對。',mark:'!'}],true);
+    return;
+  }
+  const pool=userLines.map((ln,i)=>i); // indices available
+  const results=[];
+  let sum=0;
+  problem.answer.lines.forEach(ans=>{
+    // best matching remaining user line
+    let best=null, bestErr=Infinity, bestSigned=0;
+    pool.forEach(ui=>{
+      const ul=userLines[ui];
+      let maxErr=0, signed=0;
+      ans.pivots.forEach(pv=>{ const d=userVal(ul,pv.x)-pv.y; maxErr=Math.max(maxErr,Math.abs(d)); signed+=d; });
+      signed/=ans.pivots.length;
+      // horizontal answers also require a flat user line
+      let flatPen=0;
+      if(ans.kind==='horizontal') flatPen=Math.abs(userSlope(ul))*N*0.5;
+      const eff=Math.max(maxErr,flatPen);
+      if(eff<bestErr){ bestErr=eff; best=ui; bestSigned=signed; }
+    });
+    if(best!=null){ pool.splice(pool.indexOf(best),1); }
+    const ok=bestErr<tol, close=bestErr<tol*2;
+    const score=clamp(1-bestErr/(tol*2),0,1);
+    sum+=score;
+    let dir='';
+    if(!ok){ dir = bestSigned>tol*0.4?'（畫得偏高，往下修）':bestSigned<-tol*0.4?'（畫得偏低，往上修）':'（角度/位置再調整）'; }
+    results.push({
+      ok, mark: ok?'✓':close?'≈':'✗',
+      label:ans.label,
+      msg: ok?'很準！漂亮。': close?'接近了，再微調 '+dir : '偏離較大 '+dir,
+      cls: ok?'ok':close?'close':'bad'
+    });
+  });
+  const avg=sum/problem.answer.lines.length;
+  const pct=Math.round(avg*100);
+  showResult(pct,results,false);
+  // record stat
+  stats.done+=1; stats.total+=pct;
+  document.getElementById('doneCount').textContent=stats.done;
+  document.getElementById('avgScore').textContent=Math.round(stats.total/stats.done);
+  // auto reveal answer for learning
+  showAnswer=true; document.getElementById('revealBtn').textContent='👁 隱藏答案'; draw();
+}
+
+function showResult(pct,lines,noScore){
+  const rbar=document.getElementById('rbar');
+  let verdict, vcol;
+  if(noScore){ verdict='—'; vcol='#7d8da5'; }
+  else if(pct>=88){ verdict='神準 🎯'; vcol='#34d399'; }
+  else if(pct>=70){ verdict='不錯 👍'; vcol='#f5c542'; }
+  else if(pct>=45){ verdict='再練練'; vcol='#f0a04b'; }
+  else { verdict='差蠻多'; vcol='#ff6b6b'; }
+  let html=`<div class="rhead"><div class="rscore" style="color:${vcol}">${noScore?'':pct+'　'}<span style="font-size:14px;color:var(--muted)">${noScore?'':'分'}</span></div>`+
+           `<div class="rverdict" style="background:${vcol}22;color:${vcol}">${verdict}</div></div>`;
+  lines.forEach(l=>{
+    const mc=l.cls==='ok'?'#34d399':l.cls==='close'?'#f5c542':'#ff6b6b';
+    html+=`<div class="rline"><span class="rmark" style="color:${mc}">${l.mark}</span><span><b>${l.label}</b> — <span class="rmuted">${l.msg}</span></span></div>`;
+  });
+  rbar.innerHTML=html;
+  document.getElementById('result').classList.add('show');
+}
+
+// ---------- flow ----------
+function newProblem(){
+  let key=document.getElementById('typeSel').value;
+  if(key==='random') key=GEN_KEYS[Math.floor(Math.random()*GEN_KEYS.length)];
+  problem=GENS[key]();
+  userLines=[]; drag=null; showAnswer=false;
+  document.getElementById('revealBtn').textContent='👁 看答案';
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('qChip').textContent=problem.chip;
+  document.getElementById('qChip').style.color=problem.color;
+  document.getElementById('qTitle').textContent=problem.title;
+  document.getElementById('qHint').textContent=problem.hint;
+  document.getElementById('qNum').textContent='第 '+(stats.done+1)+' 題';
+  computeScale();
+  draw();
+}
+
+function resize(){
+  const rect=wrap.getBoundingClientRect();
+  cssW=rect.width;
+  cssH=clamp(Math.round(cssW*0.92),340,560);
+  dpr=window.devicePixelRatio||1;
+  cv.width=cssW*dpr; cv.height=cssH*dpr;
+  cv.style.height=cssH+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  computeLayout();
+  if(problem){ computeScale(); draw(); }
+}
+window.addEventListener('resize',resize);
+
+// buttons
+document.getElementById('newBtn').onclick=newProblem;
+document.getElementById('typeSel').onchange=newProblem;
+document.getElementById('clearBtn').onclick=()=>{ userLines=[]; draw(); };
+document.getElementById('undoBtn').onclick=()=>{ userLines.pop(); draw(); };
+document.getElementById('checkBtn').onclick=check;
+document.getElementById('maToggle').onchange=draw;
+document.getElementById('revealBtn').onclick=()=>{
+  showAnswer=!showAnswer;
+  document.getElementById('revealBtn').textContent=showAnswer?'👁 隱藏答案':'👁 看答案';
+  draw();
+};
+
+// init
+resize();
+newProblem();
+</script>
+</body>
+</html>
