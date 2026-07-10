@@ -171,6 +171,7 @@ input[type=number] { -moz-appearance:textfield; }
         </div>
       </div>
       <div class="header-btns">
+        <button class="hbtn" id="syncBtn" onclick="openSync()">☁️ 同步</button>
         <button class="hbtn" onclick="exportData()">匯出</button>
         <button class="hbtn" onclick="document.getElementById('importFile').click()">匯入</button>
         <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
@@ -298,6 +299,16 @@ input[type=number] { -moz-appearance:textfield; }
   </div>
 </div>
 
+<!-- Cloud sync modal -->
+<div class="modal-bg" id="syncModal">
+  <div class="modal">
+    <div class="sheet-grip"></div>
+    <h3>☁️ 雲端同步</h3>
+    <div class="sub">登入 Google 後，手機和電腦會自動同步，只有你自己看得到。</div>
+    <div id="syncBody"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -312,7 +323,7 @@ function load() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
   catch(e){ return []; }
 }
-function persist() { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+function persist() { localStorage.setItem(STORE_KEY, JSON.stringify(data)); if (window.cloudPush) window.cloudPush(data); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function fmt(n, d=2) {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -664,7 +675,145 @@ function openModal(id){ document.getElementById(id).classList.add('open'); docum
 function closeModal(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) closeModal(m.id); }));
 
+/* bridges for cloud-sync module */
+window.__getData = () => data;
+window.__setData = (arr) => { data = Array.isArray(arr) ? arr : []; localStorage.setItem(STORE_KEY, JSON.stringify(data)); render(); };
+
 render();
+</script>
+
+<!-- ☁️ Firebase 雲端同步（選用；沒設定時 App 仍可純本機使用） -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const CFG_KEY = 'sj_fb_config';
+let db=null, auth=null, user=null, unsub=null, pushTimer=null;
+
+function cfg(){ try { return JSON.parse(localStorage.getItem(CFG_KEY)); } catch(e){ return null; } }
+function toast(m){ if(window.toast) return; }
+
+/* ---- 按鈕狀態 ---- */
+function updateBtn(){
+  const b=document.getElementById('syncBtn'); if(!b) return;
+  if(!cfg()) b.textContent='☁️ 同步';
+  else if(!user) b.textContent='☁️ 登入';
+  else b.textContent='✅ 已同步';
+}
+function setSyncing(){ const b=document.getElementById('syncBtn'); if(b&&user) b.textContent='⏳ 同步中'; }
+
+/* ---- 設定視窗 ---- */
+window.openSync = function(){
+  renderBody();
+  document.getElementById('syncModal').classList.add('open');
+  document.body.style.overflow='hidden';
+};
+function renderBody(){
+  const body=document.getElementById('syncBody'); const c=cfg();
+  if(!c){
+    body.innerHTML = `
+      <div class="modal-warn">第一次使用要先建立一個<b>免費的 Firebase 專案</b>（約 10 分鐘，不需信用卡）。<br>照著我給你的教學做完，把 Firebase 給你的設定整段貼在下面。</div>
+      <div class="field-label">貼上 Firebase 設定（firebaseConfig）</div>
+      <textarea class="field-area" id="fbCfg" style="min-height:120px;font-family:monospace;font-size:12px" placeholder="把 const firebaseConfig = { apiKey: ... } 整段貼進來"></textarea>
+      <div class="err-msg" id="fbErr"></div>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal('syncModal')">關閉</button>
+        <button class="btn-save" onclick="saveFbConfig()">儲存並啟用</button>
+      </div>`;
+  } else if(!user){
+    body.innerHTML = `
+      <p style="font-size:13px;color:#555;line-height:1.9;margin:8px 0 4px">設定已完成 ✅<br>用 Google 登入即可開始同步。手機與電腦登入<b>同一個 Google 帳號</b>，資料就會自動互通。</p>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="resetFbConfig()">重設設定</button>
+        <button class="btn-save" onclick="doLogin()">用 Google 登入</button>
+      </div>`;
+  } else {
+    body.innerHTML = `
+      <p style="font-size:13px;color:#555;line-height:1.9;margin:8px 0 4px">已登入：<b>${(user.email||user.uid)}</b><br>你的紀錄正在自動同步 ☁️　在另一台裝置登入同一帳號，就會看到相同資料。</p>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="doLogout()">登出</button>
+        <button class="btn-save" onclick="closeModal('syncModal')">完成</button>
+      </div>`;
+  }
+}
+
+window.saveFbConfig = function(){
+  const txt=document.getElementById('fbCfg').value;
+  const err=document.getElementById('fbErr');
+  const m=txt.match(/\{[\s\S]*\}/);
+  let obj=null;
+  try { if(m) obj=(new Function('return ('+m[0]+')'))(); } catch(e){ obj=null; }
+  if(!obj || !obj.apiKey || !obj.projectId){
+    err.textContent='看起來不是有效的 Firebase 設定，請確認整段都有貼到。'; err.classList.add('show'); return;
+  }
+  localStorage.setItem(CFG_KEY, JSON.stringify(obj));
+  location.reload();
+};
+window.resetFbConfig = function(){
+  if(!confirm('確定要重設同步設定？（本機資料不會被刪除）')) return;
+  localStorage.removeItem(CFG_KEY); location.reload();
+};
+window.doLogin = async function(){
+  const provider=new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); }
+  catch(e){
+    if(['auth/popup-blocked','auth/cancelled-popup-request','auth/popup-closed-by-user','auth/operation-not-supported-in-this-environment'].includes(e.code)){
+      try { await signInWithRedirect(auth, provider); } catch(e2){ alert('登入失敗：'+(e2.message||e2.code)); }
+    } else { alert('登入失敗：'+(e.message||e.code)); }
+  }
+};
+window.doLogout = async function(){ try { await signOut(auth); } catch(e){} };
+
+/* ---- 同步核心 ---- */
+async function startSync(){
+  if(unsub){ unsub(); unsub=null; }
+  const ref=doc(db,'journals',user.uid);
+  try {
+    const snap=await getDoc(ref);
+    const local=(window.__getData && window.__getData())||[];
+    const cloudEmpty = !snap.exists() || !((snap.data().records)||[]).length;
+    if(cloudEmpty && local.length){
+      await setDoc(ref,{records:local, updatedAt:Date.now()});   // 首次：把本機資料上傳
+    }
+  } catch(e){ console.error('startSync', e); }
+  unsub=onSnapshot(ref, snap=>{
+    if(snap.metadata.hasPendingWrites) return;   // 忽略自己剛寫入的回音
+    if(!snap.exists()) return;
+    const recs=(snap.data().records)||[];
+    window.__setData(recs);
+    updateBtn();
+  }, err=>{ console.error('onSnapshot', err); const b=document.getElementById('syncBtn'); if(b) b.textContent='⚠️ 同步錯誤'; });
+}
+
+window.cloudPush = function(arr){
+  if(!user || !db) return;
+  clearTimeout(pushTimer); setSyncing();
+  pushTimer=setTimeout(async ()=>{
+    try { await setDoc(doc(db,'journals',user.uid),{records:arr, updatedAt:Date.now()}); updateBtn(); }
+    catch(e){ console.error('push', e); const b=document.getElementById('syncBtn'); if(b) b.textContent='⚠️ 同步失敗'; }
+  }, 700);
+};
+
+/* ---- 啟動 ---- */
+(function init(){
+  const c=cfg();
+  if(c){
+    try {
+      const app=initializeApp(c); auth=getAuth(app); db=getFirestore(app);
+      getRedirectResult(auth).catch(()=>{});
+      onAuthStateChanged(auth, u=>{
+        user=u; updateBtn();
+        if(unsub){ unsub(); unsub=null; }
+        if(user) startSync();
+        if(document.getElementById('syncModal').classList.contains('open')) renderBody();
+      });
+    } catch(e){ console.error('firebase init', e); }
+  }
+  updateBtn();
+})();
 </script>
 </body>
 </html>
