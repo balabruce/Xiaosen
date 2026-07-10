@@ -691,9 +691,18 @@ import { getFirestore, doc, getDoc, setDoc, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const CFG_KEY = 'sj_fb_config';
+/* 內建的 Firebase 專案設定（公開資訊，非密碼；安全由 Firestore Rules 把關） */
+const DEFAULT_CFG = {
+  apiKey: "AIzaSyDkysJTxfdZo9GvN54clTqCinmh2pIklmY",
+  authDomain: "stock-d35f6.firebaseapp.com",
+  projectId: "stock-d35f6",
+  storageBucket: "stock-d35f6.firebasestorage.app",
+  messagingSenderId: "658758753246",
+  appId: "1:658758753246:web:eb36f3b1998034d80c5b4f"
+};
 let db=null, auth=null, user=null, unsub=null, pushTimer=null;
 
-function cfg(){ try { return JSON.parse(localStorage.getItem(CFG_KEY)); } catch(e){ return null; } }
+function cfg(){ try { return JSON.parse(localStorage.getItem(CFG_KEY)) || DEFAULT_CFG; } catch(e){ return DEFAULT_CFG; } }
 function toast(m){ if(window.toast) return; }
 
 /* ---- 按鈕狀態 ---- */
