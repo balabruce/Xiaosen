@@ -1,0 +1,14 @@
+{
+  "name": "股票交易紀錄本",
+  "short_name": "交易紀錄",
+  "description": "記錄每筆交易的買入理由、停利停損，自動計算損益與風報比",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#F0EBE3",
+  "theme_color": "#2A2621",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
