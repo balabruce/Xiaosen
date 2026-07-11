@@ -267,7 +267,7 @@ input[type=number] { -moz-appearance:textfield; }
 
     <div class="err-msg" id="errMsg"></div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('addModal')">取消</button>
+      <button class="btn-cancel" onclick="cancelAdd()">取消</button>
       <button class="btn-save" onclick="saveEntry()">儲存</button>
     </div>
   </div>
@@ -360,7 +360,13 @@ function openAdd() {
   document.getElementById('modalTitle').textContent = '新增交易';
   ['fName','fCode','fBuy','fQty','fTp','fSl','fReason','fNote'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
-  document.getElementById('calcHint').textContent = '';
+  // 有打到一半的草稿就接續填寫
+  const draft = loadDraft();
+  if (draft) {
+    DRAFT_FIELDS.forEach(id=>{ if (draft[id]) document.getElementById(id).value = draft[id]; });
+    toast('已還原上次輸入到一半的內容 ✍️');
+  }
+  updateCalc();
   document.getElementById('errMsg').classList.remove('show');
   openModal('addModal');
 }
@@ -384,6 +390,7 @@ function openEdit(id) {
 function addReason(txt) {
   const el = document.getElementById('fReason');
   el.value = el.value ? el.value.replace(/\s*$/,'') + '，' + txt : txt;
+  saveDraft();
 }
 function updateCalc() {
   const buy = parseFloat(document.getElementById('fBuy').value);
@@ -433,6 +440,7 @@ function saveEntry() {
   } else {
     rec.id = uid(); rec.status='open'; rec.cur=null; rec.created=Date.now();
     data.unshift(rec);
+    clearDraft();
     toast('已記錄，紀律加一 ✍️');
   }
   persist(); closeModal('addModal'); render();
@@ -681,7 +689,40 @@ function importData(ev) {
 function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function openModal(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
-document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) closeModal(m.id); }));
+/* 點視窗外的深色區域：輸入型視窗（新增/編輯、出場）不關閉，避免誤觸把打到一半的資料弄丟 */
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{
+  if (e.target!==m) return;
+  if (m.id==='addModal' || m.id==='closeModal') return;
+  closeModal(m.id);
+}));
+
+/* ---------- 新增視窗草稿自動保存 ---------- */
+const DRAFT_KEY = 'sj_draft_v1';
+const DRAFT_FIELDS = ['fName','fCode','fBuy','fQty','fDate','fTp','fSl','fReason','fNote'];
+function saveDraft() {
+  if (editId) return; // 編輯既有紀錄不覆蓋草稿
+  const d = {};
+  let has = false;
+  DRAFT_FIELDS.forEach(id=>{ const v=document.getElementById(id).value; d[id]=v; if(v && id!=='fDate') has=true; });
+  if (has) localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  else localStorage.removeItem(DRAFT_KEY);
+}
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch(e){ return null; }
+}
+function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+DRAFT_FIELDS.forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', saveDraft);
+  el.addEventListener('change', saveDraft);
+});
+function cancelAdd() {
+  if (!editId) {
+    const draft = loadDraft();
+    if (draft && confirm('要放棄剛剛輸入的內容嗎？\n（按「取消」可以留著，下次打開繼續填）')) clearDraft();
+  }
+  closeModal('addModal');
+}
 
 /* bridges for cloud-sync module */
 window.__getData = () => data;
