@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>隕石撞擊模擬器</title>
+<meta name="theme-color" content="#0B0E1A">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:#0B0E1A;
+  --panel:#151A2E;
+  --panel2:#1C2340;
+  --ink:#E8EAF2;
+  --muted:#8A91A8;
+  --line:#262E4D;
+  --accent:#FF8C42;
+  --accent-bright:#FFC45E;
+  --danger:#FF5C4D;
+  --ok:#5BC98C;
+}
+html, body { background:var(--bg); color:var(--ink); font-family:'Noto Sans TC',sans-serif; }
+body { overscroll-behavior-y:none; }
+.app { max-width:720px; margin:0 auto; padding:0 14px 60px; }
+
+/* Header */
+.header { padding:22px 2px 14px; display:flex; align-items:center; gap:12px; }
+.logo { width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#2A1A3E,#0F1C3F); display:flex; align-items:center; justify-content:center; font-size:24px; border:1px solid var(--line); }
+.header h1 { font-size:20px; font-weight:900; letter-spacing:0.02em; }
+.header .sub { font-size:12px; color:var(--muted); margin-top:2px; }
+
+/* Sky canvas */
+.sky-wrap { position:relative; border-radius:16px; overflow:hidden; border:1px solid var(--line); background:#05070F; }
+#sky { display:block; width:100%; height:280px; }
+.sky-hint { position:absolute; left:0; right:0; bottom:12px; text-align:center; font-size:12px; color:var(--muted); pointer-events:none; transition:opacity .4s; }
+.sky-hint.hide { opacity:0; }
+
+/* Controls */
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:14px; }
+.panel h2 { font-size:13px; font-weight:700; color:var(--muted); letter-spacing:0.1em; margin-bottom:12px; }
+.presets { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.chip { border:1px solid var(--line); background:var(--panel2); color:var(--ink); border-radius:99px; padding:7px 13px; font-size:12.5px; font-family:inherit; cursor:pointer; transition:border-color .15s; }
+.chip:hover, .chip:active { border-color:var(--accent); }
+.ctl { margin-bottom:14px; }
+.ctl-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+.ctl-head label { font-size:13.5px; font-weight:500; }
+.ctl-head .val { font-size:14px; font-weight:700; color:var(--accent-bright); font-variant-numeric:tabular-nums; }
+input[type=range] { width:100%; height:26px; appearance:none; -webkit-appearance:none; background:transparent; cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track { height:6px; border-radius:3px; background:var(--panel2); border:1px solid var(--line); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--accent); border:2px solid #fff2; margin-top:-8px; }
+input[type=range]::-moz-range-track { height:6px; border-radius:3px; background:var(--panel2); border:1px solid var(--line); }
+input[type=range]::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--accent); border:none; }
+.mats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.mat { border:1px solid var(--line); background:var(--panel2); color:var(--muted); border-radius:10px; padding:9px 4px; font-size:12.5px; font-family:inherit; cursor:pointer; text-align:center; }
+.mat.on { border-color:var(--accent); color:var(--ink); background:#2A2036; }
+.mat .rho { display:block; font-size:10px; margin-top:2px; opacity:0.7; }
+.launch { width:100%; margin-top:6px; padding:15px; border:none; border-radius:13px; background:linear-gradient(135deg,#FF8C42,#E4572E); color:#1A0E05; font-size:17px; font-weight:900; font-family:inherit; cursor:pointer; letter-spacing:0.05em; }
+.launch:active { transform:scale(0.985); }
+
+/* Results */
+#results { display:none; }
+.verdict { border-radius:16px; padding:16px 18px; margin-top:14px; font-size:15px; line-height:1.65; border:1px solid var(--line); background:linear-gradient(135deg,#231226,#151A2E); }
+.verdict .big { font-size:17px; font-weight:900; display:block; margin-bottom:4px; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-top:14px; }
+.tile { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:13px 14px; }
+.tile .k { font-size:11px; color:var(--muted); letter-spacing:0.06em; }
+.tile .v { font-size:19px; font-weight:900; margin-top:5px; font-variant-numeric:tabular-nums; line-height:1.2; }
+.tile .s { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.5; }
+
+/* You */
+.you-list { list-style:none; display:flex; flex-direction:column; gap:9px; }
+.you-list li { display:flex; gap:10px; font-size:13.5px; line-height:1.6; align-items:flex-start; }
+.you-list .ic { flex-shrink:0; width:22px; text-align:center; }
+
+/* Map */
+#map { display:block; width:100%; height:320px; border-radius:12px; background:#0A0D18; border:1px solid var(--line); }
+.legend { margin-top:12px; display:flex; flex-direction:column; gap:7px; }
+.leg { display:flex; align-items:baseline; gap:9px; font-size:12.5px; }
+.leg .sw { flex-shrink:0; width:12px; height:12px; border-radius:3px; align-self:center; }
+.leg .nm { font-weight:700; white-space:nowrap; }
+.leg .rr { color:var(--accent-bright); font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.leg .ds { color:var(--muted); }
+
+.foot { margin-top:20px; font-size:11px; color:var(--muted); line-height:1.8; text-align:center; }
+.foot a { color:var(--muted); }
+@media (max-width:420px){ .mats{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">☄️</div>
+    <div>
+      <h1>隕石撞擊模擬器</h1>
+      <div class="sub">調整隕石參數，看看撞到地球會發生什麼事</div>
+    </div>
+  </div>
+
+  <div class="sky-wrap">
+    <canvas id="sky"></canvas>
+    <div class="sky-hint" id="skyHint">調整下方參數，按下「發射隕石」</div>
+  </div>
+
+  <div class="panel">
+    <h2>歷史事件快速帶入</h2>
+    <div class="presets">
+      <button class="chip" data-p="chelyabinsk">車里雅賓斯克 2013</button>
+      <button class="chip" data-p="tunguska">通古斯 1908</button>
+      <button class="chip" data-p="barringer">巴林傑隕石坑</button>
+      <button class="chip" data-p="apophis">阿波菲斯</button>
+      <button class="chip" data-p="chicxulub">希克蘇魯伯（恐龍滅絕）</button>
+    </div>
+
+    <h2>隕石參數</h2>
+    <div class="ctl">
+      <div class="ctl-head"><label for="inDia">直徑</label><span class="val" id="vDia"></span></div>
+      <input type="range" id="inDia" min="0" max="1000" value="520">
+    </div>
+    <div class="ctl">
+      <div class="ctl-head"><label for="inVel">進入速度</label><span class="val" id="vVel"></span></div>
+      <input type="range" id="inVel" min="11" max="72" value="19" step="0.5">
+    </div>
+    <div class="ctl">
+      <div class="ctl-head"><label for="inAng">撞擊角度（相對地平線）</label><span class="val" id="vAng"></span></div>
+      <input type="range" id="inAng" min="5" max="90" value="45">
+    </div>
+    <div class="ctl">
+      <div class="ctl-head"><label>材質</label></div>
+      <div class="mats" id="mats"></div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-head"><label for="inDist">你與撞擊點的距離</label><span class="val" id="vDist"></span></div>
+      <input type="range" id="inDist" min="0" max="1000" value="450">
+    </div>
+
+    <button class="launch" id="btnLaunch">☄️ 發射隕石</button>
+  </div>
+
+  <div id="results">
+    <div class="verdict" id="verdict"></div>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="panel">
+      <h2>在你的位置（<span id="youDist"></span>外）會發生什麼</h2>
+      <ul class="you-list" id="youList"></ul>
+    </div>
+
+    <div class="panel">
+      <h2>傷害範圍圖（俯視）</h2>
+      <canvas id="map"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    物理模型簡化自 Collins, Melosh &amp; Marcus (2005)「Earth Impact Effects Program」。<br>
+    數值為粗略估計，僅供教育與娛樂用途。
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============ 參數與工具 ============ */
+const MATERIALS = [
+  { id:'ice',    name:'冰（彗星）', rho:917 },
+  { id:'carbon', name:'碳質',      rho:2200 },
+  { id:'stone',  name:'石質',      rho:3300 },
+  { id:'iron',   name:'鐵質',      rho:7870 },
+];
+let matIdx = 2;
+
+const $ = id => document.getElementById(id);
+
+function sig(x){
+  if (!isFinite(x)) return '—';
+  if (x >= 100) return Math.round(x).toLocaleString('zh-Hant');
+  if (x >= 10) return (Math.round(x*10)/10).toLocaleString('zh-Hant');
+  if (x >= 1) return (Math.round(x*100)/100).toLocaleString('zh-Hant');
+  return Number(x.toPrecision(2)).toLocaleString('zh-Hant');
+}
+function fmtCount(x){ // 大數 → 萬 / 億 / 兆
+  if (x >= 1e12) return sig(x/1e12)+' 兆';
+  if (x >= 1e8)  return sig(x/1e8)+' 億';
+  if (x >= 1e4)  return sig(x/1e4)+' 萬';
+  return sig(x);
+}
+function fmtLen(m){
+  if (!isFinite(m) || m <= 0) return '—';
+  if (m >= 1000) return sig(m/1000)+' 公里';
+  return sig(m)+' 公尺';
+}
+function fmtEnergy(J){
+  const tons = J / 4.184e9; // 噸 TNT
+  return fmtCount(tons)+'噸 TNT';
+}
+function fmtMass(kg){
+  if (kg >= 1000) return fmtCount(kg/1000)+'噸';
+  return sig(kg)+' 公斤';
+}
+function fmtYears(y){
+  if (y < 1) return '不到一年';
+  return '約每 '+fmtCount(y)+' 年一次';
+}
+
+/* ============ 撞擊物理（簡化 Collins 2005） ============ */
+function simulate(L, v0, angleDeg, rho, distKm){
+  const g = 9.81, rho0 = 1.225, Hs = 8000, Cd = 2, rhoT = 2500;
+  const th = angleDeg * Math.PI / 180, sinT = Math.sin(th);
+
+  const mass = Math.PI/6 * rho * L**3;
+  const E0 = 0.5 * mass * v0*v0;
+
+  // 大氣解體判斷（pancake 模型近似）
+  const Y = Math.pow(10, 2.107 + 0.0624*Math.sqrt(rho)); // 強度 Pa
+  let mode = 'surface', zb = 0, vi = v0;
+  if (rho0*v0*v0 >= Y){
+    const zStar = Hs * Math.log(rho0*v0*v0 / Y);
+    const rhoZ = rho0 * Math.exp(-zStar/Hs);
+    const l = L * sinT * Math.sqrt(rho/(Cd*rhoZ));
+    const fp = 7;
+    zb = zStar - 2*Hs*Math.log(1 + (l/(2*Hs))*Math.sqrt(fp*fp - 1));
+    if (zb > 0){
+      mode = zb > 40000 ? 'burnup' : 'airburst';
+    } else {
+      zb = 0;
+      vi = v0 * Math.exp(-3*rhoZ*Cd*Hs / (4*rho*L*sinT));
+    }
+  } else {
+    vi = v0 * Math.exp(-3*rho0*Cd*Hs / (4*rho*L*sinT));
+  }
+
+  const E = mode === 'surface' ? 0.5*mass*vi*vi : E0; // 釋放能量
+  const EMt = E / 4.184e15;
+
+  // 隕石坑（僅地表撞擊）
+  let craterD = 0, craterDepth = 0, seismicM = null;
+  if (mode === 'surface'){
+    const Dtc = 1.161 * Math.cbrt(rho/rhoT) * Math.pow(L,0.78) * Math.pow(vi,0.44) * Math.pow(g,-0.22) * Math.cbrt(sinT);
+    if (Dtc < 3200){
+      craterD = 1.25 * Dtc;
+      craterDepth = 0.2 * craterD;
+    } else {
+      craterD = 1.17 * Math.pow(Dtc,1.13) / Math.pow(3200,0.13);
+      craterDepth = 0.4 * Math.pow(craterD/1000, 0.3) * 1000;
+    }
+    seismicM = 0.67 * Math.log10(E) - 5.87;
+  }
+
+  // 火球與熱輻射（半徑，公尺）— 空爆時投影到地面
+  const K = 3e-3; // 發光效率
+  const fireballR = 0.002 * Math.cbrt(E);
+  function thermalR(phi1Mt){ // 斜距
+    const phi = phi1Mt * Math.pow(Math.max(EMt,1e-9), 1/6);
+    return Math.sqrt(K*E/(2*Math.PI*phi));
+  }
+  function toGround(slant){ return Math.sqrt(Math.max(0, slant*slant - zb*zb)); }
+  const burn3R = toGround(thermalR(0.42e6));
+  const fireballGroundR = toGround(fireballR);
+
+  // 空氣爆震：p(r) ≈ 367.8 · (EMt^⅓ / r_km)^1.55 kPa（地表水平距離近似）
+  function blastR(kPa){ return Math.cbrt(EMt) * Math.pow(367.8/kPa, 1/1.55) * 1000; }
+  function blastP(rKm){ return 367.8 * Math.pow(Math.cbrt(EMt)/Math.max(rKm,0.01), 1.55); }
+  const collapseR = blastR(35), windowR = blastR(2);
+
+  // 觀察者位置的效應
+  const r = distKm, rm = r*1000;
+  const slant = Math.sqrt(rm*rm + zb*zb);
+  const phiYou = K*E/(2*Math.PI*slant*slant);
+  const phiScale = Math.pow(Math.max(EMt,1e-9), 1/6);
+  const pYou = blastP(r);
+  let mEff = null;
+  if (seismicM !== null){
+    if (r < 60) mEff = seismicM - 0.0238*r;
+    else mEff = seismicM - 1.4292 - 3.0*Math.log10(r/60); // 連續銜接的對數衰減
+  }
+  let ejectaT = 0;
+  if (mode === 'surface' && craterD > 0){
+    const Dtc2 = craterD / 1.25;
+    ejectaT = Math.pow(Dtc2,4) / (112 * Math.pow(Math.max(rm, craterD/2),3));
+  }
+
+  const freqYears = 109 * Math.pow(Math.max(EMt,1e-12), 0.78);
+
+  return { L, v0, vi, angleDeg, rho, distKm, mass, E, EMt, mode, zb,
+           craterD, craterDepth, seismicM, fireballR, fireballGroundR,
+           burn3R, collapseR, windowR,
+           you:{ phi:phiYou, phiScale, p:pYou, mEff, ejectaT, slant } };
+}
+
+/* ============ 控制項 ============ */
+const diaFromSlider = t => Math.pow(10, (t/1000)*Math.log10(20000));         // 1 m – 20 km
+const distFromSlider = t => Math.pow(10, (t/1000)*Math.log10(2000));         // 1 – 2000 km
+const sliderFromDia = L => 1000*Math.log10(L)/Math.log10(20000);
+const sliderFromDist = d => 1000*Math.log10(d)/Math.log10(2000);
+
+function readInputs(){
+  return {
+    L: diaFromSlider(+$('inDia').value),
+    v0: +$('inVel').value * 1000,
+    angle: +$('inAng').value,
+    rho: MATERIALS[matIdx].rho,
+    dist: distFromSlider(+$('inDist').value),
+  };
+}
+function refreshLabels(){
+  const p = readInputs();
+  $('vDia').textContent = fmtLen(p.L);
+  $('vVel').textContent = sig(p.v0/1000)+' 公里/秒';
+  $('vAng').textContent = p.angle+'°';
+  $('vDist').textContent = sig(p.dist)+' 公里';
+}
+['inDia','inVel','inAng','inDist'].forEach(id => $(id).addEventListener('input', refreshLabels));
+
+const matsEl = $('mats');
+MATERIALS.forEach((m,i)=>{
+  const b = document.createElement('button');
+  b.className = 'mat'+(i===matIdx?' on':'');
+  b.innerHTML = m.name+'<span class="rho">'+m.rho.toLocaleString()+' kg/m³</span>';
+  b.onclick = ()=>{ matIdx=i; [...matsEl.children].forEach((c,j)=>c.classList.toggle('on',j===i)); };
+  matsEl.appendChild(b);
+});
+
+const PRESETS = {
+  chelyabinsk:{ L:20,    v:19,   ang:18, mat:2, dist:40 },
+  tunguska:   { L:60,    v:15,   ang:35, mat:2, dist:30 },
+  barringer:  { L:50,    v:12.8, ang:45, mat:3, dist:20 },
+  apophis:    { L:340,   v:12.6, ang:45, mat:2, dist:50 },
+  chicxulub:  { L:10000, v:20,   ang:60, mat:2, dist:1000 },
+};
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', ()=>{
+  const p = PRESETS[c.dataset.p];
+  $('inDia').value = sliderFromDia(p.L);
+  $('inVel').value = p.v;
+  $('inAng').value = p.ang;
+  $('inDist').value = sliderFromDist(p.dist);
+  matIdx = p.mat;
+  [...matsEl.children].forEach((el,j)=>el.classList.toggle('on', j===p.mat));
+  refreshLabels();
+  launch();
+}));
+
+/* ============ 結果呈現 ============ */
+const RING_COLORS = { crater:'#FFEBC2', fireball:'#FFC45E', burn:'#F58A31', collapse:'#D95F24', window:'#C24E1E' };
+let lastResult = null;
+
+function renderResults(R){
+  // 判詞
+  let big, body;
+  if (R.mode === 'burnup'){
+    big = '☄️ 在大氣層中燒毀';
+    body = '這顆隕石在約 '+sig(R.zb/1000)+' 公里的高空解體燒盡，成為一顆壯觀的火流星。除了夜空中的光芒與一聲悶響，地面幾乎不受影響。';
+  } else if (R.mode === 'airburst'){
+    big = '💥 空中爆炸（空爆）';
+    body = '隕石承受不住大氣壓力，在高度約 '+sig(R.zb/1000)+' 公里處爆炸解體，釋放約 '+fmtEnergy(R.E)+' 的能量（約 '+fmtCount(R.EMt/0.015)+' 顆廣島原子彈）。爆震波由空中直撲地面。';
+  } else {
+    big = '🌋 撞擊地表';
+    body = '隕石以每秒 '+sig(R.vi/1000)+' 公里的速度撞上地面，釋放約 '+fmtEnergy(R.E)+' 的能量（約 '+fmtCount(R.EMt/0.015)+' 顆廣島原子彈），挖出直徑 '+fmtLen(R.craterD)+' 的隕石坑。';
+  }
+  if (R.EMt >= 1e6) body += '這是足以引發全球性大滅絕的等級——塵埃遮蔽陽光、全球性野火與長期寒冬。';
+  else if (R.EMt >= 100) body += '這屬於足以摧毀一整個區域、影響全球氣候的重大事件。';
+  $('verdict').innerHTML = '<span class="big">'+big+'</span>'+body;
+
+  // 數據磚
+  const tiles = [
+    { k:'釋放能量', v:fmtEnergy(R.E), s:'≈ '+fmtCount(R.EMt/0.015)+' 顆廣島原子彈' },
+    { k:'隕石質量', v:fmtMass(R.mass), s:'直徑 '+fmtLen(R.L)+'・'+MATERIALS[matIdx].name },
+    { k:'發生頻率', v:fmtYears(109*Math.pow(Math.max(R.EMt,1e-12),0.78)), s:'同等能量天體撞擊地球的平均間隔' },
+  ];
+  if (R.mode === 'surface'){
+    tiles.splice(1,0,
+      { k:'隕石坑直徑', v:fmtLen(R.craterD), s:'深約 '+fmtLen(R.craterDepth) },
+      { k:'火球半徑', v:fmtLen(R.fireballR), s:'範圍內一切被點燃、汽化' },
+      { k:'地震規模', v:'M '+sig(R.seismicM), s:'撞擊引發的等效芮氏規模' });
+  } else if (R.mode === 'airburst'){
+    tiles.splice(1,0,
+      { k:'空爆高度', v:fmtLen(R.zb), s:'於此高度解體爆炸' },
+      { k:'窗戶碎裂範圍', v:fmtLen(R.windowR), s:'超壓 2 kPa 的半徑' });
+  } else {
+    tiles.splice(1,0,{ k:'解體高度', v:fmtLen(R.zb), s:'高空燒毀，無地面傷害' });
+  }
+  $('tiles').innerHTML = tiles.map(t =>
+    '<div class="tile"><div class="k">'+t.k+'</div><div class="v">'+t.v+'</div><div class="s">'+t.s+'</div></div>'
+  ).join('');
+
+  // 你的位置
+  $('youDist').textContent = sig(R.distKm)+' 公里';
+  const items = [];
+  const rm = R.distKm*1000;
+  if (R.mode === 'surface' && rm < R.craterD/2){
+    items.push(['💀','你位於隕石坑範圍內——在撞擊瞬間汽化，沒有任何感覺的時間。']);
+  } else if (R.mode !== 'burnup'){
+    if (rm < R.fireballGroundR) items.push(['🔥','你在火球範圍內，瞬間被上千度的高溫吞沒。']);
+    else {
+      const ps = R.you.phiScale;
+      if (R.you.phi > 1.0e6*ps) items.push(['🔥','熱輻射強到衣物直接起火，身邊的樹木、房屋同時燃燒。']);
+      else if (R.you.phi > 0.42e6*ps) items.push(['🔥','暴露的皮膚受到三度灼傷。']);
+      else if (R.you.phi > 0.25e6*ps) items.push(['🌡️','暴露的皮膚受到二度灼傷，像被烙鐵掃過。']);
+      else if (R.you.phi > 0.13e6*ps) items.push(['🌡️','感受到強烈熱浪，皮膚一度灼傷（類似嚴重曬傷）。']);
+    }
+    const p = R.you.p;
+    const tSound = rm/340, tSeis = rm/5000;
+    if (p > 70) items.push(['🏚️','超壓約 '+sig(p)+' kPa——幾乎所有建築被夷為平地。']);
+    else if (p > 35) items.push(['🏚️','超壓約 '+sig(p)+' kPa——多數建築倒塌，鋼筋結構嚴重受損。']);
+    else if (p > 20) items.push(['🏚️','超壓約 '+sig(p)+' kPa——磚房大量倒塌。']);
+    else if (p > 7) items.push(['🏠','超壓約 '+sig(p)+' kPa——房屋受損、樹木折斷、人被吹倒。']);
+    else if (p > 2) items.push(['🪟','超壓約 '+sig(p)+' kPa——窗戶大面積碎裂，玻璃如雨。']);
+    else if (p > 0.3) items.push(['🔊','一聲震耳巨響，窗戶劇烈晃動。']);
+    if (R.you.mEff !== null && R.you.mEff > 1){
+      const m = R.you.mEff;
+      const desc = m>=9?'毀滅性搖晃，地面如波浪起伏':m>=7?'劇烈搖晃，建築倒塌':m>=6?'強烈搖晃，難以站立':m>=5?'明顯搖晃，物品掉落':m>=4?'有感地震':'輕微震動';
+      items.push(['🌍','撞擊後約 '+sig(tSeis)+' 秒，地震波抵達——體感規模約 M '+sig(m)+'，'+desc+'。']);
+    }
+    if (R.you.ejectaT > 0.01) items.push(['🪨','天空降下熾熱的噴出物，在你的位置堆積約 '+fmtLen(R.you.ejectaT)+' 厚。']);
+    if (p > 0.3 || rm < R.windowR*2) items.push(['⏱️','閃光是瞬間的，但爆震聲要 '+sig(tSound)+' 秒後才轟然而至。']);
+  }
+  if (!items.length) items.push(['✨','你距離夠遠——只會看到一場難忘的天文奇觀，平安無事。']);
+  $('youList').innerHTML = items.map(i=>'<li><span class="ic">'+i[0]+'</span><span>'+i[1]+'</span></li>').join('');
+
+  drawMap(R);
+  $('results').style.display = 'block';
+}
+
+/* ============ 傷害範圍圖 ============ */
+function ringsOf(R){
+  const rings = [];
+  if (R.mode === 'burnup') return rings;
+  if (R.mode === 'surface' && R.craterD > 0)
+    rings.push({ id:'crater', name:'隕石坑', r:R.craterD/2, txt:'直徑 '+fmtLen(R.craterD), ds:'地殼被挖開、翻起' });
+  if (R.fireballGroundR > 0)
+    rings.push({ id:'fireball', name:'火球', r:R.fireballGroundR, txt:'半徑 '+fmtLen(R.fireballGroundR), ds:'一切被點燃、汽化' });
+  if (R.burn3R > 0)
+    rings.push({ id:'burn', name:'三度灼傷', r:R.burn3R, txt:'半徑 '+fmtLen(R.burn3R), ds:'熱輻射造成暴露皮膚重度灼傷' });
+  if (R.collapseR > 0)
+    rings.push({ id:'collapse', name:'建築倒塌', r:R.collapseR, txt:'半徑 '+fmtLen(R.collapseR), ds:'超壓 35 kPa，多數建築倒塌' });
+  if (R.windowR > 0)
+    rings.push({ id:'window', name:'窗戶碎裂', r:R.windowR, txt:'半徑 '+fmtLen(R.windowR), ds:'超壓 2 kPa，玻璃大面積破碎' });
+  return rings.filter(g=>g.r>0).sort((a,b)=>b.r-a.r);
+}
+
+function drawMap(R){
+  const cv = $('map'), dpr = window.devicePixelRatio||1;
+  const W = cv.clientWidth||600, H = 320;
+  cv.width = W*dpr; cv.height = H*dpr;
+  const x = cv.getContext('2d'); x.scale(dpr,dpr);
+  x.clearRect(0,0,W,H);
+
+  const rings = ringsOf(R);
+  const legend = $('legend');
+  if (!rings.length){
+    x.fillStyle = '#8A91A8'; x.font='13px Noto Sans TC'; x.textAlign='center';
+    x.fillText('高空燒毀——地面沒有傷害範圍 ✨', W/2, H/2);
+    legend.innerHTML = '';
+    return;
+  }
+  const cx = W/2, cy = H/2;
+  const maxR = Math.max(rings[0].r, R.distKm*1000*1.05);
+  const scale = (Math.min(W,H)/2 - 26) / maxR;
+
+  // 同心圓（外→內，越內越亮＝越嚴重）
+  rings.forEach(g=>{
+    const rp = Math.max(3, g.r*scale);
+    x.beginPath(); x.arc(cx,cy,rp,0,7);
+    x.fillStyle = RING_COLORS[g.id]+'1A'; x.fill();
+    x.lineWidth = 2; x.strokeStyle = RING_COLORS[g.id]; x.stroke();
+  });
+  // 撞擊點
+  x.fillStyle = '#fff';
+  x.beginPath(); x.arc(cx,cy,3,0,7); x.fill();
+
+  // 觀察者
+  const orp = R.distKm*1000*scale;
+  const ox = cx + Math.min(orp, Math.min(W,H)/2-20)*Math.SQRT1_2;
+  const oy = cy - Math.min(orp, Math.min(W,H)/2-20)*Math.SQRT1_2;
+  x.beginPath(); x.arc(ox,oy,5,0,7);
+  x.fillStyle = '#4C8FD6'; x.fill();
+  x.lineWidth = 2; x.strokeStyle = '#0A0D18'; x.stroke();
+  x.fillStyle = '#E8EAF2'; x.font='700 12px Noto Sans TC'; x.textAlign='left';
+  x.fillText('你', ox+9, oy+4);
+
+  // 比例尺
+  const nice = Math.pow(10, Math.floor(Math.log10(maxR/2.5)));
+  const step = maxR/2.5/nice >= 5 ? 5*nice : maxR/2.5/nice >= 2 ? 2*nice : nice;
+  const bw = step*scale;
+  x.strokeStyle = '#8A91A8'; x.lineWidth = 2;
+  x.beginPath(); x.moveTo(14, H-16); x.lineTo(14+bw, H-16); x.stroke();
+  x.beginPath(); x.moveTo(14, H-21); x.lineTo(14, H-11); x.stroke();
+  x.beginPath(); x.moveTo(14+bw, H-21); x.lineTo(14+bw, H-11); x.stroke();
+  x.fillStyle = '#8A91A8'; x.font='11px Noto Sans TC'; x.textAlign='left';
+  x.fillText(fmtLen(step), 14+bw+7, H-12);
+
+  legend.innerHTML = rings.map(g=>
+    '<div class="leg"><span class="sw" style="background:'+RING_COLORS[g.id]+'"></span>'+
+    '<span class="nm">'+g.name+'</span><span class="rr">'+g.txt+'</span><span class="ds">'+g.ds+'</span></div>'
+  ).join('');
+}
+
+/* ============ 天空動畫 ============ */
+const sky = $('sky');
+const sctx = sky.getContext('2d');
+let SW=0, SH=0, stars=[];
+function sizeSky(){
+  const dpr = window.devicePixelRatio||1;
+  SW = sky.clientWidth||600; SH = 280;
+  sky.width = SW*dpr; sky.height = SH*dpr;
+  sctx.setTransform(dpr,0,0,dpr,0,0);
+  stars = Array.from({length:90},()=>({x:Math.random()*SW,y:Math.random()*SH*0.8,r:Math.random()*1.3+0.3,a:Math.random()*0.7+0.2}));
+}
+window.addEventListener('resize', ()=>{ sizeSky(); if(lastResult) drawMap(lastResult); drawIdle(); });
+
+const GY = ()=> SH*0.82;
+let anim = null; // {phase, t0, ...}
+
+function drawScene(craterW, glow){
+  sctx.fillStyle = '#05070F';
+  sctx.fillRect(0,0,SW,SH);
+  // 星星
+  stars.forEach(s=>{ sctx.globalAlpha=s.a; sctx.fillStyle='#DDE4FF'; sctx.beginPath(); sctx.arc(s.x,s.y,s.r,0,7); sctx.fill(); });
+  sctx.globalAlpha = 1;
+  // 地面
+  const gy = GY();
+  const grd = sctx.createLinearGradient(0,gy,0,SH);
+  grd.addColorStop(0,'#1B2338'); grd.addColorStop(1,'#0D1220');
+  sctx.fillStyle = grd;
+  sctx.beginPath();
+  sctx.moveTo(0,gy+6);
+  sctx.quadraticCurveTo(SW/2, gy-8, SW, gy+6);
+  sctx.lineTo(SW,SH); sctx.lineTo(0,SH); sctx.closePath();
+  sctx.fill();
+  // 隕石坑
+  if (craterW > 0){
+    sctx.fillStyle = '#05070F';
+    sctx.beginPath();
+    sctx.ellipse(SW/2, gy-1, craterW/2, craterW/6, 0, 0, Math.PI);
+    sctx.fill();
+    if (glow > 0){
+      sctx.globalAlpha = glow;
+      sctx.fillStyle = '#FF6A2A';
+      sctx.beginPath();
+      sctx.ellipse(SW/2, gy-1, craterW/2.4, craterW/8, 0, 0, Math.PI);
+      sctx.fill();
+      sctx.globalAlpha = 1;
+    }
+  }
+}
+function drawIdle(){ drawScene(0,0); }
+
+function launch(){
+  const p = readInputs();
+  const R = simulate(p.L, p.v0, p.angle, p.rho, p.dist);
+  lastResult = R;
+  $('skyHint').classList.add('hide');
+
+  const th = p.angle*Math.PI/180;
+  const gy = GY();
+  const tx = SW/2;
+  const ty = R.mode==='surface' ? gy
+           : gy - Math.min(0.62, R.zb/60000*0.62)*SH; // 空爆高度（視覺化）
+  // 起點取在畫面邊緣剛外側，整段墜落都看得到
+  const cosT = Math.cos(th), sinT = Math.sin(th);
+  const tRight = cosT > 0.01 ? (SW+30-tx)/cosT : Infinity;
+  const tTop = (ty+30)/sinT;
+  const travel = Math.min(tRight, tTop);
+  const sx = tx + cosT*travel;
+  const sy = ty - sinT*travel;
+  const mr = 3 + Math.log10(Math.max(p.L,1))/4.3*9; // 視覺半徑 3–12px
+  const craterW = R.mode==='surface' ? Math.min(SW*0.45, Math.max(14, Math.log10(Math.max(R.craterD,10))*22)) : 0;
+  const boomR = Math.min(SW,SH)* (R.mode==='burnup' ? 0.25 : 0.55);
+
+  const parts = Array.from({length: R.mode==='surface'?70:40},()=>{
+    const a = Math.random()*Math.PI, v = 60+Math.random()*220;
+    return { vx:Math.cos(a)*v*(Math.random()<0.5?-1:1)*0.6, vy:-Math.sin(a)*v, life:0.6+Math.random()*0.9 };
+  });
+
+  anim = { R, t0:performance.now(), sx, sy, tx, ty, mr, craterW, boomR, parts, fallT:1.5, shown:false };
+  requestAnimationFrame(tick);
+}
+
+function tick(now){
+  if (!anim) return;
+  const a = anim, R = a.R;
+  const t = (now - a.t0)/1000;
+
+  if (t < a.fallT){
+    // 墜落
+    const k = t/a.fallT, e = k*k; // 加速
+    const mx = a.sx + (a.tx-a.sx)*e, my = a.sy + (a.ty-a.sy)*e;
+    drawScene(0,0);
+    // 尾跡
+    const dx = a.sx-a.tx, dy = a.sy-a.ty, dl = Math.hypot(dx,dy);
+    const ux = dx/dl, uy = dy/dl, tl = 90+a.mr*8;
+    const g = sctx.createLinearGradient(mx,my,mx+ux*tl,my+uy*tl);
+    g.addColorStop(0,'rgba(255,244,214,0.95)');
+    g.addColorStop(0.3,'rgba(255,140,66,0.55)');
+    g.addColorStop(1,'rgba(255,140,66,0)');
+    sctx.strokeStyle = g; sctx.lineWidth = a.mr*1.6; sctx.lineCap='round';
+    sctx.beginPath(); sctx.moveTo(mx,my); sctx.lineTo(mx+ux*tl,my+uy*tl); sctx.stroke();
+    // 本體
+    sctx.save();
+    sctx.shadowColor = '#FFC45E'; sctx.shadowBlur = 18;
+    sctx.fillStyle = '#FFF6E0';
+    sctx.beginPath(); sctx.arc(mx,my,a.mr,0,7); sctx.fill();
+    sctx.restore();
+  } else {
+    // 爆炸／撞擊
+    const bt = t - a.fallT;
+    if (!a.shown){ a.shown = true; renderResults(R); $('results').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+    const dur = 1.6;
+    const q = Math.min(1, bt/dur);
+    const shake = (1-q)*7;
+    sctx.save();
+    sctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+    drawScene(a.craterW*Math.min(1,q*2.5), Math.max(0, 0.7-q));
+    // 衝擊波環
+    for (let i=0;i<3;i++){
+      const rq = q - i*0.14;
+      if (rq>0 && rq<1){
+        sctx.globalAlpha = (1-rq)*0.8;
+        sctx.strokeStyle = i===0?'#FFF2D0':'#FF9147';
+        sctx.lineWidth = 3-i;
+        sctx.beginPath(); sctx.arc(a.tx,a.ty,rq*a.boomR,0,7); sctx.stroke();
+      }
+    }
+    sctx.globalAlpha = 1;
+    // 火光
+    if (q < 0.5){
+      const fr = a.boomR*0.35*(0.3+q*1.4);
+      const fg = sctx.createRadialGradient(a.tx,a.ty,0,a.tx,a.ty,fr);
+      fg.addColorStop(0,'rgba(255,250,230,'+(0.95*(1-q*2))+')');
+      fg.addColorStop(0.5,'rgba(255,140,66,'+(0.6*(1-q*2))+')');
+      fg.addColorStop(1,'rgba(255,80,40,0)');
+      sctx.fillStyle = fg;
+      sctx.beginPath(); sctx.arc(a.tx,a.ty,fr,0,7); sctx.fill();
+    }
+    // 噴出物
+    a.parts.forEach(pt=>{
+      if (bt < pt.life){
+        const px = a.tx + pt.vx*bt, py = a.ty + pt.vy*bt + 180*bt*bt;
+        sctx.globalAlpha = 1-bt/pt.life;
+        sctx.fillStyle = '#FFB066';
+        sctx.fillRect(px,py,2.2,2.2);
+      }
+    });
+    sctx.globalAlpha = 1;
+    // 全幕閃光
+    if (bt < 0.25){
+      sctx.fillStyle = 'rgba(255,252,240,'+(1-bt/0.25)+')';
+      sctx.fillRect(-10,-10,SW+20,SH+20);
+    }
+    sctx.restore();
+    if (q >= 1){
+      drawScene(a.craterW,0.12);
+      anim = null;
+      return;
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+$('btnLaunch').addEventListener('click', launch);
+
+sizeSky();
+refreshLabels();
+drawIdle();
+</script>
+</body>
+</html>
